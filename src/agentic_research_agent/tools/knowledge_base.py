@@ -49,9 +49,7 @@ class KnowledgeBase:
         if self._embeddings is None:
             logger.debug("Loading embedding model: %s", self._settings.embedding_model)
             self._configure_hf_auth()
-            self._embeddings = HuggingFaceEmbeddings(
-                model_name=self._settings.embedding_model
-            )
+            self._embeddings = HuggingFaceEmbeddings(model_name=self._settings.embedding_model)
         return self._embeddings
 
     def _configure_hf_auth(self) -> None:

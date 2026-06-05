@@ -1,0 +1,49 @@
+# Local production-shaped stack: API + Postgres (checkpointer + pgvector-ready).
+# Usage:
+#   cp .env.example .env   # set GROQ_API_KEY, API_KEYS, etc.
+#   docker compose up --build
+#
+# This wires the durable Postgres checkpointer. Set CHECKPOINTER=postgres and
+# POSTGRES_DSN in the environment to use it (see api service below).
+
+services:
+  api:
+    build: .
+    image: agentic-research-agent:0.1.0
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+      LLM_MODEL: ${LLM_MODEL:-llama-3.3-70b-versatile}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      API_KEYS: ${API_KEYS:-}
+      CHECKPOINTER: postgres
+      POSTGRES_DSN: postgresql://agent:agent@postgres:5432/agent
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent
+      POSTGRES_DB: agent
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata: {}

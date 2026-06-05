@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentic Research Agent — Production-Grade Guide</title>
+  <style>
+    :root {
+      --ink: #17202a; --muted: #5d6d7e; --line: #d5dde5; --panel: #fff;
+      --band: #f4f7fa; --code-bg: #102a33; --code-fg: #eaf7fa;
+      --accent: #1f7a8c; --accent-2: #bf6b21; --good: #2d7d46; --warn: #9a3412; --soft: #eaf1f5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink); background: var(--band); line-height: 1.58; }
+    header { background: #10313b; color: #fff; padding: 50px 24px 36px; border-bottom: 6px solid var(--accent-2); }
+    main { max-width: 1180px; margin: 0 auto; padding: 28px 20px 70px; }
+    h1,h2,h3,h4 { line-height: 1.18; margin: 0 0 12px; }
+    h1 { font-size: clamp(2rem, 4vw, 3.3rem); }
+    h2 { font-size: 1.62rem; margin-top: 30px; }
+    h3 { font-size: 1.16rem; margin-top: 22px; color: #123; }
+    h4 { font-size: 1rem; margin-top: 16px; color: var(--accent); }
+    p { margin: 0 0 14px; }
+    a { color: var(--accent); }
+    .lede { max-width: 940px; color: #d9e8ed; font-size: 1.08rem; }
+    .meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; font-size:.92rem; }
+    .pill { border:1px solid rgba(255,255,255,.28); padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.08); }
+    section { background: var(--panel); border:1px solid var(--line); border-radius:8px; padding:24px; margin:18px 0; box-shadow:0 8px 28px rgba(23,32,42,.05); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+    .card { border:1px solid var(--line); border-radius:8px; padding:16px; background:#fff; }
+    .card strong { display:block; margin-bottom:6px; }
+    .callout { border-left:5px solid var(--accent); background:#eef8fa; padding:14px 16px; margin:14px 0; border-radius:0 8px 8px 0; }
+    .warning { border-left-color:var(--warn); background:#fff4ec; }
+    .good-note { border-left-color:var(--good); background:#eef8f1; }
+    code { background:#eef3f8; border:1px solid #d9e2ea; border-radius:5px; padding:1px 5px; font-family:"SFMono-Regular",Consolas,monospace; font-size:.9em; }
+    pre { overflow-x:auto; background:var(--code-bg); color:var(--code-fg); border-radius:8px; padding:16px; font-size:.86rem; margin:12px 0 16px; }
+    pre code { background:transparent; border:0; color:inherit; padding:0; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:.92rem; }
+    th,td { border:1px solid var(--line); padding:10px 12px; vertical-align:top; text-align:left; }
+    th { background:var(--soft); }
+    ol,ul { padding-left:22px; } li { margin:4px 0; }
+    .step { border-left:3px solid var(--accent); padding-left:16px; margin:18px 0; }
+    .step h3 { margin-top:0; }
+    .ok { color:var(--good); font-weight:700; } .watch { color:var(--warn); font-weight:700; }
+    svg { width:100%; height:auto; border:1px solid var(--line); border-radius:8px; background:#fff; margin:12px 0 4px; }
+    .caption { color:var(--muted); font-size:.9rem; }
+    .toc { columns:2; column-gap:30px; }
+    .toc a { display:block; padding:3px 0; }
+    .tag { display:inline-block; font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--soft); color:var(--accent); }
+    @media print { body{background:#fff;} section{break-inside:avoid; box-shadow:none;} header{-webkit-print-color-adjust:exact; print-color-adjust:exact;} .toc{columns:2;} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Production-Grade Guide</h1>
+    <p class="lede">The complete technical reference for the Agentic Research Agent after its production hardening: architecture and diagrams, full configuration, step-by-step local run, server deployment (Docker · Compose · Kubernetes), and how to scale it on real infrastructure.</p>
+    <div class="meta">
+      <span class="pill">Document type: Technical &amp; Deployment Guide</span>
+      <span class="pill">Generated: 2026-06-05</span>
+      <span class="pill">Version: 0.1.0</span>
+      <span class="pill">Runtime: Python 3.13</span>
+      <span class="pill">64 tests · ruff · mypy clean</span>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Contents</h2>
+      <div class="toc">
+        <a href="#whatsnew">1. What's New (Production Hardening)</a>
+        <a href="#architecture">2. Architecture &amp; Diagrams</a>
+        <a href="#lifecycle">3. Request Lifecycle</a>
+        <a href="#stack">4. Technology Stack &amp; Layout</a>
+        <a href="#providers">5. LLM Providers</a>
+        <a href="#config">6. Configuration Reference</a>
+        <a href="#local">7. Run Locally — Step by Step</a>
+        <a href="#api">8. The HTTP API</a>
+        <a href="#deploy">9. Deploy to a Server — Step by Step</a>
+        <a href="#scaling">10. Scaling Strategies</a>
+        <a href="#observability">11. Observability</a>
+        <a href="#cicd">12. CI/CD</a>
+        <a href="#security">13. Security</a>
+        <a href="#troubleshooting">14. Troubleshooting</a>
+      </div>
+    </section>
+
+    <!-- 1 -->
+    <section id="whatsnew">
+      <h2>1. What's New (Production Hardening)</h2>
+      <p>The agent began as a CLI/library package. It now also ships as a horizontally-scalable HTTP service with the operational controls a real deployment needs. Everything below is implemented and tested — not aspirational.</p>
+      <div class="grid">
+        <div class="card"><strong>FastAPI service</strong>Async API with <code>/v1/ask</code>, <code>/v1/stream</code> (SSE), built once at startup and shared across requests.</div>
+        <div class="card"><strong>Durable memory</strong>Pluggable checkpointer: <code>memory</code> / <code>sqlite</code> / <code>postgres</code> — survives restarts and is shareable across replicas.</div>
+        <div class="card"><strong>6 LLM providers</strong>Groq, OpenAI, Azure OpenAI, Anthropic, Gemini, Ollama — chosen by env var, with per-provider default models.</div>
+        <div class="card"><strong>Auth &amp; rate limiting</strong>API-key auth (<code>X-API-Key</code>) and a per-identity sliding-window limiter.</div>
+        <div class="card"><strong>Health &amp; metrics</strong><code>/health/live</code>, <code>/health/ready</code>, Prometheus <code>/metrics</code>; request IDs and a hard request timeout.</div>
+        <div class="card"><strong>Resilience</strong>Provider retries, LLM timeouts, and recovery/resampling for provider tool-call hiccups.</div>
+        <div class="card"><strong>Observability</strong>Structured JSON logs in production, run IDs &amp; durations, optional LangSmith tracing.</div>
+        <div class="card"><strong>Containers &amp; CI</strong>Multi-stage Dockerfile (non-root, healthcheck), docker-compose (API + Postgres), GitHub Actions pipeline.</div>
+        <div class="card"><strong>Content normalization</strong>Clean text from providers that return content blocks (Gemini/Anthropic), not raw dicts.</div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section id="architecture">
+      <h2>2. Architecture &amp; Diagrams</h2>
+      <p>Stateless API replicas hold no session state; conversation memory, vectors, and metrics live in shared/observable backends. Knowledge-base ingestion runs out-of-band.</p>
+      <svg viewBox="0 0 1000 470" role="img" aria-label="Production architecture">
+        <defs><marker id="pa" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#1f7a8c"></path></marker></defs>
+        <rect x="24" y="200" width="128" height="64" rx="8" fill="#eaf1f5" stroke="#9fb4c3"></rect>
+        <text x="88" y="228" text-anchor="middle" font-size="13" font-weight="700">Clients</text>
+        <text x="88" y="248" text-anchor="middle" font-size="11">CLI · web · svc</text>
+        <rect x="188" y="196" width="150" height="72" rx="8" fill="#fff4e8" stroke="#e7b678"></rect>
+        <text x="263" y="220" text-anchor="middle" font-size="13" font-weight="700">Edge</text>
+        <text x="263" y="238" text-anchor="middle" font-size="11">TLS · LB · WAF</text>
+        <text x="263" y="256" text-anchor="middle" font-size="11">API key · rate limit</text>
+        <rect x="376" y="150" width="206" height="168" rx="8" fill="#fff" stroke="#1f7a8c" stroke-width="2"></rect>
+        <text x="479" y="175" text-anchor="middle" font-size="14" font-weight="700">API Tier (stateless, HPA)</text>
+        <rect x="396" y="188" width="166" height="38" rx="6" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="479" y="212" text-anchor="middle" font-size="12">FastAPI + Uvicorn workers</text>
+        <rect x="396" y="232" width="166" height="34" rx="6" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="479" y="254" text-anchor="middle" font-size="12">ResearchAgent · LangGraph</text>
+        <rect x="396" y="272" width="166" height="30" rx="6" fill="#f7fbf7" stroke="#a7cfae"></rect>
+        <text x="479" y="292" text-anchor="middle" font-size="11">/health · /metrics · auth</text>
+        <rect x="642" y="36" width="172" height="56" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="728" y="60" text-anchor="middle" font-size="13" font-weight="700">LLM Provider</text>
+        <text x="728" y="78" text-anchor="middle" font-size="11">Groq/OpenAI/Azure/…</text>
+        <rect x="642" y="110" width="172" height="56" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="728" y="134" text-anchor="middle" font-size="13" font-weight="700">Vector store</text>
+        <text x="728" y="152" text-anchor="middle" font-size="11">Chroma / pgvector</text>
+        <rect x="642" y="184" width="172" height="56" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="728" y="208" text-anchor="middle" font-size="13" font-weight="700">Checkpointer</text>
+        <text x="728" y="226" text-anchor="middle" font-size="11">SQLite / Postgres</text>
+        <rect x="642" y="258" width="172" height="56" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="728" y="282" text-anchor="middle" font-size="13" font-weight="700">Cache (opt.)</text>
+        <text x="728" y="300" text-anchor="middle" font-size="11">Redis — semantic</text>
+        <rect x="864" y="150" width="116" height="118" rx="8" fill="#eef8fa" stroke="#9acbd4"></rect>
+        <text x="922" y="198" text-anchor="middle" font-size="13" font-weight="700">Observe</text>
+        <text x="922" y="220" text-anchor="middle" font-size="11">LangSmith</text>
+        <text x="922" y="238" text-anchor="middle" font-size="11">Prometheus</text>
+        <rect x="376" y="356" width="206" height="62" rx="8" fill="#fff4ec" stroke="#d59b73"></rect>
+        <text x="479" y="382" text-anchor="middle" font-size="13" font-weight="700">Ingestion job</text>
+        <text x="479" y="402" text-anchor="middle" font-size="11">research-agent ingest → vectors</text>
+        <line x1="152" y1="232" x2="188" y2="232" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="338" y1="232" x2="376" y2="232" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="582" y1="210" x2="642" y2="70" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="582" y1="228" x2="642" y2="138" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="582" y1="246" x2="642" y2="210" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="582" y1="288" x2="864" y2="208" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="479" y1="356" x2="479" y2="318" stroke="#bf6b21" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#pa)"></line>
+      </svg>
+      <p class="caption">Figure 1 — Target runtime. The dashed line is the out-of-band ingestion pipeline that only writes vectors.</p>
+
+      <h3>The agent core (LangGraph ReAct loop)</h3>
+      <svg viewBox="0 0 820 210" role="img" aria-label="ReAct loop">
+        <defs><marker id="r2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#bf6b21"></path></marker></defs>
+        <circle cx="70" cy="110" r="30" fill="#eaf1f5" stroke="#9fb4c3"></circle>
+        <text x="70" y="114" text-anchor="middle" font-size="12" font-weight="700">START</text>
+        <rect x="170" y="78" width="160" height="64" rx="10" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="250" y="106" text-anchor="middle" font-size="13" font-weight="700">agent (LLM)</text>
+        <text x="250" y="125" text-anchor="middle" font-size="11">+ system prompt, tools</text>
+        <polygon points="470,70 540,110 470,150 400,110" fill="#fff4e8" stroke="#e7b678"></polygon>
+        <text x="470" y="106" text-anchor="middle" font-size="12" font-weight="700">tool</text>
+        <text x="470" y="122" text-anchor="middle" font-size="12" font-weight="700">calls?</text>
+        <rect x="600" y="78" width="150" height="64" rx="10" fill="#f7fbf7" stroke="#a7cfae"></rect>
+        <text x="675" y="106" text-anchor="middle" font-size="13" font-weight="700">tools</text>
+        <text x="675" y="125" text-anchor="middle" font-size="11">calculator·search·RAG</text>
+        <circle cx="470" cy="185" r="20" fill="#eaf1f5" stroke="#9fb4c3"></circle>
+        <text x="470" y="189" text-anchor="middle" font-size="11" font-weight="700">END</text>
+        <line x1="100" y1="110" x2="168" y2="110" stroke="#bf6b21" stroke-width="2" marker-end="url(#r2)"></line>
+        <line x1="330" y1="110" x2="398" y2="110" stroke="#bf6b21" stroke-width="2" marker-end="url(#r2)"></line>
+        <line x1="540" y1="110" x2="598" y2="110" stroke="#bf6b21" stroke-width="2" marker-end="url(#r2)"></line>
+        <text x="568" y="100" font-size="11">yes</text>
+        <path d="M675 78 C675 30 250 30 250 78" fill="none" stroke="#bf6b21" stroke-width="2" marker-end="url(#r2)"></path>
+        <text x="455" y="60" font-size="11">observe → loop</text>
+        <line x1="470" y1="150" x2="470" y2="165" stroke="#bf6b21" stroke-width="2" marker-end="url(#r2)"></line>
+        <text x="486" y="172" font-size="11">no</text>
+      </svg>
+      <p class="caption">Figure 2 — The agent node calls the model; if it requested tools, the tool node runs them and loops back, bounded by <code>RECURSION_LIMIT</code>.</p>
+    </section>
+
+    <!-- 3 -->
+    <section id="lifecycle">
+      <h2>3. Request Lifecycle</h2>
+      <svg viewBox="0 0 900 280" role="img" aria-label="Request sequence">
+        <defs><marker id="s1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1f7a8c"></path></marker>
+        <marker id="s2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#2d7d46"></path></marker></defs>
+        <g font-size="12" font-weight="700" text-anchor="middle">
+          <text x="70" y="26">Client</text><text x="250" y="26">API + Auth</text><text x="450" y="26">Agent</text><text x="640" y="26">LLM</text><text x="820" y="26">Tools</text>
+        </g>
+        <g stroke="#cdd7e0" stroke-dasharray="3 4"><line x1="70" y1="34" x2="70" y2="262"/><line x1="250" y1="34" x2="250" y2="262"/><line x1="450" y1="34" x2="450" y2="262"/><line x1="640" y1="34" x2="640" y2="262"/><line x1="820" y1="34" x2="820" y2="262"/></g>
+        <g font-size="11" fill="#33424f">
+          <line x1="70" y1="56" x2="248" y2="56" stroke="#1f7a8c" stroke-width="1.6" marker-end="url(#s1)"/><text x="150" y="50">POST /v1/ask + X-API-Key</text>
+          <line x1="250" y1="86" x2="448" y2="86" stroke="#1f7a8c" stroke-width="1.6" marker-end="url(#s1)"/><text x="350" y="80">authorize · rate-limit · run</text>
+          <line x1="450" y1="116" x2="638" y2="116" stroke="#1f7a8c" stroke-width="1.6" marker-end="url(#s1)"/><text x="545" y="110">prompt + tool schema</text>
+          <line x1="640" y1="146" x2="452" y2="146" stroke="#2d7d46" stroke-width="1.6" marker-end="url(#s2)"/><text x="556" y="140" fill="#2d7d46">tool call request</text>
+          <line x1="450" y1="176" x2="818" y2="176" stroke="#1f7a8c" stroke-width="1.6" marker-end="url(#s1)"/><text x="640" y="170">execute tool</text>
+          <line x1="820" y1="206" x2="452" y2="206" stroke="#2d7d46" stroke-width="1.6" marker-end="url(#s2)"/><text x="640" y="200" fill="#2d7d46">observation → loop to LLM</text>
+          <line x1="250" y1="240" x2="72" y2="240" stroke="#2d7d46" stroke-width="1.6" marker-end="url(#s2)"/><text x="150" y="234" fill="#2d7d46">AgentResponse (+run_id, ms)</text>
+        </g>
+      </svg>
+      <p>Per request: validate &amp; size-check input → authenticate &amp; rate-limit → stamp <code>run_id</code> + start timer → run the ReAct loop (LLM ⇄ tools) → normalize the answer to clean text → record metrics → return a typed <code>AgentResponse</code>. Any failure becomes an <code>AgentExecutionError</code> mapped to HTTP 502; a stuck request is cut off by the timeout middleware (504).</p>
+    </section>
+
+    <!-- 4 -->
+    <section id="stack">
+      <h2>4. Technology Stack &amp; Project Layout</h2>
+      <table>
+        <thead><tr><th>Concern</th><th>Technology</th></tr></thead>
+        <tbody>
+          <tr><td>Orchestration</td><td>LangGraph 1.x (explicit ReAct <code>StateGraph</code>)</td></tr>
+          <tr><td>LLM abstraction</td><td>LangChain Core 1.x (<code>BaseChatModel</code>)</td></tr>
+          <tr><td>API</td><td>FastAPI + Uvicorn/Gunicorn (ASGI)</td></tr>
+          <tr><td>State</td><td>LangGraph checkpointer — Memory / SQLite / Postgres</td></tr>
+          <tr><td>RAG</td><td>Chroma vector store + local sentence-transformers embeddings</td></tr>
+          <tr><td>Config</td><td>pydantic-settings (typed, validated, env-driven)</td></tr>
+          <tr><td>CLI</td><td>Typer + Rich</td></tr>
+          <tr><td>Metrics</td><td>prometheus-client</td></tr>
+          <tr><td>Packaging</td><td>uv + hatchling (src layout, <code>py.typed</code>)</td></tr>
+          <tr><td>Quality</td><td>pytest · ruff · mypy</td></tr>
+        </tbody>
+      </table>
+      <pre><code>src/agentic_research_agent/
+├── api/           # FastAPI app, routes, auth + rate limit, metrics, server entrypoint
+│   ├── app.py     # lifespan (build agent once), routes, middleware, error handlers
+│   ├── dependencies.py   # API-key auth, sliding-window rate limiter, agent accessor
+│   ├── metrics.py        # Prometheus counters/histogram
+│   └── server.py         # `research-agent-api` (uvicorn) entrypoint
+├── agents/        # graph (ReAct), state, prompts, service facade, checkpointer factory
+├── core/          # LLM factory, logging (rich/JSON), observability (LangSmith), exceptions
+├── tools/         # calculator · web_search · knowledge_base (RAG)
+├── config/        # Settings (all env vars), provider + checkpointer enums
+├── schemas/       # AgentRequest / AgentResponse / ToolCallRecord
+└── cli.py         # `research-agent` (ask · chat · ingest)
+Dockerfile · docker-compose.yml · .dockerignore · .github/workflows/ci.yml
+data/knowledge_base/  (RAG corpus)   ·   data/vector_store/ (generated, gitignored)</code></pre>
+    </section>
+
+    <!-- 5 -->
+    <section id="providers">
+      <h2>5. LLM Providers</h2>
+      <p>The provider is selected by <code>LLM_PROVIDER</code>; the only place a concrete SDK is chosen is the factory in <code>core/llm.py</code>. Leave <code>LLM_MODEL</code> unset to use the per-provider default.</p>
+      <table>
+        <thead><tr><th>Provider</th><th><code>LLM_PROVIDER</code></th><th>Default model</th><th>Required credentials</th></tr></thead>
+        <tbody>
+          <tr><td>Groq</td><td><code>groq</code></td><td><code>llama-3.3-70b-versatile</code></td><td><code>GROQ_API_KEY</code></td></tr>
+          <tr><td>OpenAI</td><td><code>openai</code></td><td><code>gpt-4o-mini</code></td><td><code>OPENAI_API_KEY</code></td></tr>
+          <tr><td>Azure OpenAI</td><td><code>azure</code></td><td>(deployment name)</td><td><code>AZURE_OPENAI_API_KEY</code>, <code>AZURE_OPENAI_ENDPOINT</code>, <code>AZURE_OPENAI_DEPLOYMENT</code>, <code>AZURE_OPENAI_API_VERSION</code></td></tr>
+          <tr><td>Anthropic</td><td><code>anthropic</code></td><td><code>claude-sonnet-4-6</code></td><td><code>ANTHROPIC_API_KEY</code></td></tr>
+          <tr><td>Gemini</td><td><code>gemini</code></td><td><code>gemini-2.5-flash</code></td><td><code>GOOGLE_API_KEY</code> or <code>GEMINI_API_KEY</code></td></tr>
+          <tr><td>Ollama (local)</td><td><code>ollama</code></td><td><code>llama3.1</code></td><td><code>OLLAMA_BASE_URL</code></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><strong>Azure note:</strong> Azure routes by <em>deployment name</em>, not a model name — set <code>AZURE_OPENAI_DEPLOYMENT</code> and leave <code>LLM_MODEL</code> unset. The endpoint looks like <code>https://&lt;resource&gt;.openai.azure.com/</code>. Do not put trailing commas/quotes on any <code>.env</code> value — they become part of the value and cause 404s.</div>
+    </section>
+
+    <!-- 6 -->
+    <section id="config">
+      <h2>6. Configuration Reference</h2>
+      <p>All settings come from environment variables (or a local <code>.env</code>) and are validated on load. Copy <code>.env.example</code> to <code>.env</code> to start.</p>
+      <table>
+        <thead><tr><th>Variable</th><th>Default</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>ENVIRONMENT</code></td><td><code>development</code></td><td><code>production</code> → JSON logs &amp; open-API warning</td></tr>
+          <tr><td><code>LOG_LEVEL</code></td><td><code>INFO</code></td><td>DEBUG…CRITICAL</td></tr>
+          <tr><td><code>LLM_PROVIDER</code></td><td><code>groq</code></td><td>groq·openai·azure·anthropic·gemini·ollama</td></tr>
+          <tr><td><code>LLM_MODEL</code></td><td>provider default</td><td>Optional override</td></tr>
+          <tr><td><code>LLM_TEMPERATURE</code> / <code>LLM_MAX_TOKENS</code></td><td><code>0.1</code> / <code>1024</code></td><td>Inference params</td></tr>
+          <tr><td><code>LLM_TIMEOUT_SECONDS</code> / <code>LLM_MAX_RETRIES</code></td><td><code>60</code> / <code>2</code></td><td>Per-call timeout &amp; transient-error retries</td></tr>
+          <tr><td><code>CHECKPOINTER</code></td><td><code>memory</code></td><td>memory·sqlite·postgres</td></tr>
+          <tr><td><code>SQLITE_PATH</code> / <code>POSTGRES_DSN</code></td><td>—</td><td>State backend location</td></tr>
+          <tr><td><code>EMBEDDING_MODEL</code></td><td><code>all-MiniLM-L6-v2</code></td><td>Local embeddings</td></tr>
+          <tr><td><code>CHUNK_SIZE</code> / <code>CHUNK_OVERLAP</code> / <code>RETRIEVER_TOP_K</code></td><td><code>1000</code>/<code>150</code>/<code>4</code></td><td>RAG tuning</td></tr>
+          <tr><td><code>API_HOST</code> / <code>API_PORT</code> / <code>API_WORKERS</code></td><td><code>0.0.0.0</code>/<code>8000</code>/<code>1</code></td><td>Server bind &amp; workers</td></tr>
+          <tr><td><code>API_KEYS</code></td><td>—</td><td>Comma-separated keys; empty = auth disabled</td></tr>
+          <tr><td><code>CORS_ORIGINS</code></td><td><code>*</code></td><td>Allowed origins</td></tr>
+          <tr><td><code>RATE_LIMIT_ENABLED</code> / <code>RATE_LIMIT_PER_MINUTE</code></td><td><code>true</code> / <code>60</code></td><td>Per-key/IP budget</td></tr>
+          <tr><td><code>REQUEST_TIMEOUT_SECONDS</code> / <code>MAX_QUESTION_CHARS</code></td><td><code>120</code> / <code>4000</code></td><td>Edge timeout &amp; input cap</td></tr>
+          <tr><td><code>LANGSMITH_TRACING</code> / <code>LANGSMITH_API_KEY</code></td><td><code>false</code> / —</td><td>Distributed tracing</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 7 -->
+    <section id="local">
+      <h2>7. Run Locally — Step by Step</h2>
+      <div class="step">
+        <h3>Step 1 — Prerequisites</h3>
+        <p>Python 3.13+ and <a href="https://docs.astral.sh/uv/">uv</a>. Verify:</p>
+        <pre><code>python --version    # 3.13+
+uv --version</code></pre>
+      </div>
+      <div class="step">
+        <h3>Step 2 — Install dependencies</h3>
+        <pre><code>uv sync                    # runtime + dev deps into .venv
+# (optional) Postgres checkpointer support:
+uv sync --extra postgres</code></pre>
+      </div>
+      <div class="step">
+        <h3>Step 3 — Configure</h3>
+        <pre><code>cp .env.example .env</code></pre>
+        <p>Edit <code>.env</code> and set <strong>one</strong> provider + its key. Examples:</p>
+        <pre><code># Groq (free)
+LLM_PROVIDER=groq
+GROQ_API_KEY=...
+
+# Azure OpenAI
+LLM_PROVIDER=azure
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_ENDPOINT=https://&lt;resource&gt;.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=&lt;deployment-name&gt;
+AZURE_OPENAI_API_VERSION=2024-10-21
+
+# Gemini
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=...</code></pre>
+        <div class="warning callout"><strong>Do not</strong> add trailing commas/quotes to <code>.env</code> values — they are read verbatim and cause auth/404 errors.</div>
+      </div>
+      <div class="step">
+        <h3>Step 4 — Build the knowledge base (RAG)</h3>
+        <p>First run downloads the embedding model (~80 MB) once, then indexes <code>data/knowledge_base/</code>.</p>
+        <pre><code>uv run research-agent ingest          # add --force to rebuild after edits</code></pre>
+      </div>
+      <div class="step">
+        <h3>Step 5 — Use the CLI</h3>
+        <pre><code>uv run research-agent ask "What is the ReAct pattern? And what is 23*19?"
+uv run research-agent chat                     # interactive, with memory
+uv run research-agent chat "start with this question"   # optional seed
+uv run research-agent ask "..." --thread session-1      # separate memory</code></pre>
+      </div>
+      <div class="step">
+        <h3>Step 6 — Run the API locally</h3>
+        <pre><code>uv run research-agent-api          # http://localhost:8000  (Swagger UI at /docs)</code></pre>
+        <p>Smoke test in another terminal:</p>
+        <pre><code>curl localhost:8000/health/ready
+curl -X POST localhost:8000/v1/ask \
+  -H "Content-Type: application/json" -H "X-API-Key: $API_KEYS" \
+  -d '{"question":"What is 23*19?","thread_id":"demo"}'</code></pre>
+      </div>
+      <div class="step">
+        <h3>Step 7 — Validate (before committing/deploying)</h3>
+        <pre><code>uv run pytest          # 64 tests, offline
+uv run ruff check . && uv run ruff format --check .
+uv run mypy</code></pre>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section id="api">
+      <h2>8. The HTTP API</h2>
+      <table>
+        <thead><tr><th>Endpoint</th><th>Method</th><th>Auth</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>/v1/ask</code></td><td>POST</td><td>API key + rate limit</td><td>Answer a question → <code>AgentResponse</code> (answer, run_id, duration_ms, tool_calls)</td></tr>
+          <tr><td><code>/v1/stream</code></td><td>POST</td><td>API key + rate limit</td><td>Stream the run as Server-Sent Events</td></tr>
+          <tr><td><code>/health/live</code></td><td>GET</td><td>none</td><td>Liveness (process up)</td></tr>
+          <tr><td><code>/health/ready</code></td><td>GET</td><td>none</td><td>Readiness (vector store + LLM reachable) → 200/503</td></tr>
+          <tr><td><code>/metrics</code></td><td>GET</td><td>none</td><td>Prometheus metrics</td></tr>
+          <tr><td><code>/docs</code></td><td>GET</td><td>none</td><td>Swagger UI</td></tr>
+        </tbody>
+      </table>
+      <p>Every response carries an <code>X-Request-ID</code>; requests exceeding <code>REQUEST_TIMEOUT_SECONDS</code> return 504; over-long inputs return 413; missing/invalid key returns 401; over-budget callers get 429.</p>
+    </section>
+
+    <!-- 9 -->
+    <section id="deploy">
+      <h2>9. Deploy to a Server — Step by Step</h2>
+
+      <h3>Option A — Docker (single container)</h3>
+      <div class="step">
+        <h3>A1. Build the image</h3>
+        <pre><code>docker build -t agentic-research-agent:0.1.0 .</code></pre>
+        <p>The multi-stage build installs deps with uv, runs as a non-root user, pre-warms the embedding model, and defines a <code>/health/ready</code> HEALTHCHECK.</p>
+      </div>
+      <div class="step">
+        <h3>A2. Run it</h3>
+        <pre><code>docker run -d --name research-agent -p 8000:8000 \
+  --env-file .env \
+  -e ENVIRONMENT=production -e CHECKPOINTER=sqlite \
+  -e API_KEYS="$STRONG_KEY" \
+  -v ra_state:/app/data \
+  agentic-research-agent:0.1.0</code></pre>
+        <p>The container starts gunicorn with uvicorn workers. Secrets come from the runtime environment — never baked into the image.</p>
+      </div>
+
+      <h3>Option B — Docker Compose (API + Postgres)</h3>
+      <div class="step">
+        <h3>B1. Bring up the stack</h3>
+        <pre><code>cp .env.example .env      # set provider key + API_KEYS
+docker compose up --build</code></pre>
+        <p>Compose runs the API with a durable <strong>Postgres</strong> checkpointer (<code>CHECKPOINTER=postgres</code>) using the <code>pgvector</code> Postgres image, with health-gated startup. Good for a single-host always-on service.</p>
+      </div>
+
+      <h3>Option C — Kubernetes (scalable)</h3>
+      <div class="step">
+        <h3>C1. Push the image &amp; create secrets</h3>
+        <pre><code>docker tag agentic-research-agent:0.1.0 $REGISTRY/agentic-research-agent:0.1.0
+docker push $REGISTRY/agentic-research-agent:0.1.0
+kubectl create secret generic research-agent-secrets \
+  --from-literal=GROQ_API_KEY=... --from-literal=API_KEYS=... \
+  --from-literal=POSTGRES_DSN=postgresql://user:pass@pg:5432/agent</code></pre>
+      </div>
+      <div class="step">
+        <h3>C2. Deployment + probes + autoscaling</h3>
+        <pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata: { name: research-agent }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: research-agent } }
+  template:
+    metadata: { labels: { app: research-agent } }
+    spec:
+      containers:
+        - name: api
+          image: REGISTRY/agentic-research-agent:0.1.0
+          ports: [{ containerPort: 8000 }]
+          env:
+            - { name: ENVIRONMENT, value: production }
+            - { name: CHECKPOINTER, value: postgres }
+          envFrom: [{ secretRef: { name: research-agent-secrets } }]
+          readinessProbe: { httpGet: { path: /health/ready, port: 8000 }, initialDelaySeconds: 25, periodSeconds: 10 }
+          livenessProbe:  { httpGet: { path: /health/live,  port: 8000 }, periodSeconds: 15 }
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits:   { cpu: "2",    memory: "2Gi" }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: research-agent }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: research-agent }
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 65 } }</code></pre>
+        <p>Add a <code>Service</code> + <code>Ingress</code> (TLS) in front. Readiness gates traffic until the model is loaded and dependencies are reachable; liveness restarts a wedged pod.</p>
+      </div>
+
+      <h3>Option D — Serverless container (Cloud Run / ECS Fargate / Container Apps)</h3>
+      <div class="step">
+        <h3>D1. Deploy the image</h3>
+        <p>Push the image and let the platform handle TLS, autoscaling, and rollout. Set <code>min-instances ≥ 1</code> (the embedding-model load makes cold starts heavy) and a generous startup/health timeout. Inject secrets from the platform's secret manager.</p>
+        <pre><code># Cloud Run example
+gcloud run deploy research-agent \
+  --image $REGISTRY/agentic-research-agent:0.1.0 \
+  --min-instances 1 --max-instances 20 --concurrency 20 \
+  --cpu 2 --memory 2Gi --port 8000 \
+  --set-secrets API_KEYS=research-api-keys:latest,GROQ_API_KEY=groq-key:latest</code></pre>
+      </div>
+
+      <div class="callout"><strong>Tuning workers:</strong> set gunicorn workers to roughly <code>2 × vCPU</code> for this I/O-bound workload (each request mostly waits on the LLM). Override the image command or set <code>API_WORKERS</code> when using <code>research-agent-api</code>.</div>
+    </section>
+
+    <!-- 10 -->
+    <section id="scaling">
+      <h2>10. Scaling Strategies</h2>
+      <svg viewBox="0 0 900 250" role="img" aria-label="Scaling topology">
+        <defs><marker id="sc" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1f7a8c"></path></marker></defs>
+        <rect x="30" y="100" width="120" height="50" rx="8" fill="#fff4e8" stroke="#e7b678"></rect>
+        <text x="90" y="130" text-anchor="middle" font-size="12" font-weight="700">Load Balancer</text>
+        <rect x="220" y="40" width="130" height="40" rx="8" fill="#eaf7fa" stroke="#9acbd4"></rect><text x="285" y="65" text-anchor="middle" font-size="12">API pod 1</text>
+        <rect x="220" y="105" width="130" height="40" rx="8" fill="#eaf7fa" stroke="#9acbd4"></rect><text x="285" y="130" text-anchor="middle" font-size="12">API pod 2</text>
+        <rect x="220" y="170" width="130" height="40" rx="8" fill="#eaf7fa" stroke="#9acbd4"></rect><text x="285" y="195" text-anchor="middle" font-size="12">API pod N (HPA)</text>
+        <rect x="430" y="40" width="150" height="40" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect><text x="505" y="65" text-anchor="middle" font-size="12">Postgres (state)</text>
+        <rect x="430" y="105" width="150" height="40" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect><text x="505" y="130" text-anchor="middle" font-size="12">Vector DB (shared)</text>
+        <rect x="430" y="170" width="150" height="40" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect><text x="505" y="195" text-anchor="middle" font-size="12">Redis cache (opt.)</text>
+        <rect x="650" y="105" width="150" height="40" rx="8" fill="#f7fbf7" stroke="#a7cfae"></rect><text x="725" y="130" text-anchor="middle" font-size="12">LLM provider</text>
+        <line x1="150" y1="125" x2="218" y2="60" stroke="#1f7a8c" stroke-width="1.6" marker-end="url(#sc)"/>
+        <line x1="150" y1="125" x2="218" y2="125" stroke="#1f7a8c" stroke-width="1.6" marker-end="url(#sc)"/>
+        <line x1="150" y1="125" x2="218" y2="190" stroke="#1f7a8c" stroke-width="1.6" marker-end="url(#sc)"/>
+        <line x1="350" y1="125" x2="428" y2="60" stroke="#1f7a8c" stroke-width="1.4" marker-end="url(#sc)"/>
+        <line x1="350" y1="125" x2="428" y2="125" stroke="#1f7a8c" stroke-width="1.4" marker-end="url(#sc)"/>
+        <line x1="580" y1="125" x2="648" y2="125" stroke="#1f7a8c" stroke-width="1.4" marker-end="url(#sc)"/>
+      </svg>
+      <p class="caption">Figure 3 — Scale the stateless API tier horizontally; keep all state in shared backends so any pod can serve any conversation.</p>
+
+      <h3>How to scale on servers</h3>
+      <table>
+        <thead><tr><th>Dimension</th><th>Bottleneck</th><th>What to do</th></tr></thead>
+        <tbody>
+          <tr><td>Throughput</td><td>Concurrent requests; LLM latency dominates each</td><td><strong>Scale out</strong> replicas (K8s HPA / serverless autoscaling) on CPU + concurrency. Within a pod, run multiple uvicorn workers (~2×vCPU).</td></tr>
+          <tr><td>State</td><td>In-memory state can't be shared</td><td>Use <code>CHECKPOINTER=postgres</code> so every replica reads the same threads; add <strong>PgBouncer</strong> connection pooling.</td></tr>
+          <tr><td>Vector search</td><td>Local Chroma file is node-bound</td><td>Move to a <strong>shared/served vector DB</strong> (pgvector, Qdrant, managed) with proper HNSW indexing &amp; replicas.</td></tr>
+          <tr><td>Embeddings</td><td>CPU-bound local model under load</td><td>Run embeddings as a dedicated service or use hosted embeddings; GPU nodes for large ingestion. Keep ingestion off the serving path.</td></tr>
+          <tr><td>Provider limits</td><td>LLM rate limits / quotas (429)</td><td>Request quota increases; add <strong>multi-provider fallback</strong> (config swap); queue + backpressure; cache repeated answers.</td></tr>
+          <tr><td>Cost &amp; latency</td><td>Token spend, repeated questions</td><td><strong>Semantic + prompt caching</strong>; model routing/cascade (cheap model first); per-tenant token budgets; stream tokens for perceived latency.</td></tr>
+          <tr><td>Cold starts</td><td>Embedding model load at boot</td><td>Bake model into the image (done); keep <code>min-instances ≥ 1</code> / a warm pool; generous readiness delay.</td></tr>
+        </tbody>
+      </table>
+      <div class="good-note callout"><strong>Golden rule:</strong> the API tier is stateless by design, so scaling is "add replicas." The real work is making sure <em>state</em> (memory, vectors, cache) lives in shared backends and that you respect the LLM provider's rate limits.</div>
+
+      <h3>Capacity sizing (rule of thumb)</h3>
+      <ul>
+        <li>Each request is mostly idle waiting on the LLM, so workers can exceed core count. Start at <code>workers = 2 × vCPU</code>, then tune by watching CPU and p95 latency.</li>
+        <li>Estimate replicas: <code>peak_RPS × avg_seconds_per_request ÷ (workers × target_utilization)</code>. Example: 20 RPS × 4 s ÷ (4 × 0.65) ≈ 31 concurrent → ~8 pods at 4 workers.</li>
+        <li>Set HPA <code>maxReplicas</code> below your LLM provider's concurrency/quota ceiling — otherwise you scale into 429s.</li>
+      </ul>
+    </section>
+
+    <!-- 11 -->
+    <section id="observability">
+      <h2>11. Observability</h2>
+      <div class="grid">
+        <div class="card"><strong>Health</strong><code>/health/live</code> (restart signal) and <code>/health/ready</code> (traffic gate) — wired to K8s probes and the container HEALTHCHECK.</div>
+        <div class="card"><strong>Metrics</strong><code>/metrics</code> exposes request counts, run duration histogram, tool-call counts, and run outcomes for Prometheus + Grafana.</div>
+        <div class="card"><strong>Logs</strong>Rich console in dev, structured <strong>JSON</strong> in production (<code>ENVIRONMENT=production</code>), with <code>run_id</code>, <code>thread_id</code>, <code>duration_ms</code>, tool counts.</div>
+        <div class="card"><strong>Tracing</strong>Set <code>LANGSMITH_TRACING=true</code> + <code>LANGSMITH_API_KEY</code> for span-level traces of every LLM and tool call.</div>
+      </div>
+      <h3>Suggested SLOs &amp; alerts</h3>
+      <ul>
+        <li>Availability ≥ 99.5% non-5xx on <code>/v1/ask</code>; p95 latency under target; run success &gt; 98%.</li>
+        <li>Alert on: 401/429 spikes, rising <code>agent_run_failed</code>, readiness failures, token/cost anomalies, climbing empty-retrieval rates.</li>
+      </ul>
+    </section>
+
+    <!-- 12 -->
+    <section id="cicd">
+      <h2>12. CI/CD</h2>
+      <p>The included GitHub Actions workflow runs on every push/PR:</p>
+      <pre><code>uv sync --frozen --extra postgres
+uv run ruff check .        # lint
+uv run ruff format --check .
+uv run mypy                # types
+uv run pytest -q           # 64 tests (offline)
+docker build .             # image builds</code></pre>
+      <p>For releases, extend with image scanning (e.g. Trivy), a registry push on tags, and a progressive rollout (canary → 100%) with automatic rollback on SLO breach. For LLM apps, add an <strong>offline eval gate</strong> (answer quality / retrieval relevance) that must pass before promotion.</p>
+    </section>
+
+    <!-- 13 -->
+    <section id="security">
+      <h2>13. Security</h2>
+      <ul>
+        <li>Secrets injected at runtime from a managed store; <code>.env</code> is git-ignored; keys held as <code>SecretStr</code>. Never bake secrets into images.</li>
+        <li>TLS + WAF + API-key auth at the edge; per-key rate limits and quotas.</li>
+        <li>Calculator uses an AST allow-list (no <code>eval</code>); input length capped; treat retrieved/web content as untrusted (prompt-injection awareness).</li>
+        <li>Run as non-root in the container; scan images and pin <code>uv.lock</code>; restrict egress for outbound LLM/search calls; keep audit logs (run_id, inputs, tool calls).</li>
+      </ul>
+    </section>
+
+    <!-- 14 -->
+    <section id="troubleshooting">
+      <h2>14. Troubleshooting</h2>
+      <table>
+        <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td><code>404 model_not_found</code> (OpenAI)</td><td>Provider switched but <code>LLM_MODEL</code> still set to another provider's model</td><td>Unset <code>LLM_MODEL</code> (use provider default) or set a valid model for the provider</td></tr>
+          <tr><td><code>404 Resource not found</code> (Azure)</td><td>Wrong endpoint/deployment — often a stray trailing comma/space in <code>.env</code></td><td>Clean <code>AZURE_OPENAI_*</code> values (no trailing comma/quote); verify deployment name &amp; api-version</td></tr>
+          <tr><td><code>429 insufficient_quota / rate limit</code></td><td>Provider account quota or per-minute/day limit reached</td><td>Add billing / raise quota, wait for reset, or switch provider; <code>LLM_MAX_RETRIES</code> covers only transient 429s</td></tr>
+          <tr><td>Run aborts on tool-heavy prompts (intermittent)</td><td>Provider returned a malformed <code>tool_use_failed</code></td><td>Handled: the agent parses known failure formats and resamples; no action needed</td></tr>
+          <tr><td>Answer shows raw <code>[{'type':'text',…}]</code></td><td>Provider returns content blocks</td><td>Handled: responses are normalized to clean text</td></tr>
+          <tr><td>Memory lost after restart</td><td><code>CHECKPOINTER=memory</code></td><td>Use <code>sqlite</code> (single node) or <code>postgres</code> (multi-replica)</td></tr>
+          <tr><td><code>401</code> from the API</td><td>Missing/invalid <code>X-API-Key</code></td><td>Send a key listed in <code>API_KEYS</code></td></tr>
+          <tr><td>Slow first request</td><td>Embedding model downloading/loading</td><td>Pre-warm (image bakes it); keep a warm instance</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</body>
+</html>

@@ -59,10 +59,10 @@ def test_large_exponents_are_rejected() -> None:
     "expression",
     [
         "__import__('os').system('echo hi')",  # code injection attempt
-        "open('/etc/passwd')",                  # disallowed builtin
-        "x + 1",                                 # unknown name
-        "2 +",                                   # syntax error
-        "exit()",                                # disallowed call
+        "open('/etc/passwd')",  # disallowed builtin
+        "x + 1",  # unknown name
+        "2 +",  # syntax error
+        "exit()",  # disallowed call
     ],
 )
 def test_unsafe_or_invalid_expressions_are_rejected(expression: str) -> None:

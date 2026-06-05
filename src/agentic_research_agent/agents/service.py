@@ -9,18 +9,21 @@ stable API — ``ask`` / ``stream`` — that hides all LangGraph wiring.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from contextlib import ExitStack
 from time import perf_counter
+from types import TracebackType
 from uuid import uuid4
 
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint.memory import MemorySaver
 
+from agentic_research_agent.agents.checkpointer import build_checkpointer
 from agentic_research_agent.agents.graph import build_agent_graph
 from agentic_research_agent.config.settings import Settings, get_settings
 from agentic_research_agent.core.exceptions import AgentExecutionError
 from agentic_research_agent.core.llm import build_chat_model
 from agentic_research_agent.core.logging import configure_logging, get_logger
+from agentic_research_agent.core.observability import configure_tracing
 from agentic_research_agent.schemas.models import (
     AgentRequest,
     AgentResponse,
@@ -44,22 +47,69 @@ class ResearchAgent:
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
         configure_logging(self._settings.log_level, json_logs=self._settings.is_production)
+        configure_tracing(self._settings)
 
         logger.info(
-            "Initializing ResearchAgent (provider=%s, model=%s)",
+            "Initializing ResearchAgent (provider=%s, model=%s, checkpointer=%s)",
             self._settings.llm_provider.value,
-            self._settings.llm_model,
+            self._settings.effective_llm_model,
+            self._settings.checkpointer.value,
         )
 
+        # Resources that hold connections (durable checkpointers) are opened
+        # against this stack and released by close()/the context manager.
+        self._stack = ExitStack()
         self._llm = build_chat_model(self._settings)
         self._knowledge_base = KnowledgeBase(self._settings)
         self._knowledge_base.build()  # load or build the vector store
 
         self._tools = build_toolset(self._settings, self._knowledge_base)
-        # In-memory checkpointer keeps per-thread conversation memory for the
-        # life of the process. Swap for SqliteSaver/PostgresSaver to persist.
-        self._checkpointer = MemorySaver()
+        self._checkpointer = build_checkpointer(self._settings, self._stack)
         self._graph = build_agent_graph(self._llm, self._tools, self._checkpointer)
+
+    # -- lifecycle ------------------------------------------------------------
+
+    def close(self) -> None:
+        """Release held resources (e.g. a durable checkpointer connection)."""
+
+        self._stack.close()
+
+    def __enter__(self) -> ResearchAgent:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    # -- health ---------------------------------------------------------------
+
+    def knowledge_base_ready(self) -> bool:
+        """Return True if the vector store can serve a query."""
+
+        try:
+            self._knowledge_base.search("readiness probe")
+            return True
+        except Exception:  # noqa: BLE001 - readiness must never raise
+            logger.warning("knowledge base readiness check failed", exc_info=True)
+            return False
+
+    def llm_reachable(self) -> bool:
+        """Return True if the chat model was constructed.
+
+        This is a shallow, zero-cost check (no token-spending call). Construction
+        already validates credentials via the provider factory; a deep ping can
+        be added if liveness of the provider endpoint must be asserted.
+        """
+
+        return self._llm is not None
+
+    @property
+    def settings(self) -> Settings:
+        return self._settings
 
     # -- public API -----------------------------------------------------------
 
@@ -95,7 +145,7 @@ class ResearchAgent:
             ) from exc
         duration_ms = int((perf_counter() - started) * 1000)
         messages = result["messages"]
-        answer = messages[-1].content if messages else ""
+        answer = _message_text(messages[-1]) if messages else ""
         tool_calls = _collect_tool_calls(messages)
         logger.info(
             "agent_run_finished run_id=%s thread_id=%s duration_ms=%d tool_calls=%d",
@@ -105,7 +155,7 @@ class ResearchAgent:
             len(tool_calls),
         )
         return AgentResponse(
-            answer=str(answer),
+            answer=answer,
             thread_id=request.thread_id,
             run_id=run_id,
             duration_ms=duration_ms,
@@ -130,7 +180,9 @@ class ResearchAgent:
                 names = ", ".join(tc["name"] for tc in last.tool_calls)
                 yield f"[thinking] calling tools: {names}"
             elif isinstance(last, AIMessage) and last.content:
-                yield str(last.content)
+                text = _message_text(last)
+                if text:
+                    yield text
 
     # -- internals ------------------------------------------------------------
 
@@ -147,7 +199,28 @@ def _collect_tool_calls(messages: list) -> list[ToolCallRecord]:
     records: list[ToolCallRecord] = []
     for message in messages:
         for call in getattr(message, "tool_calls", None) or []:
-            records.append(
-                ToolCallRecord(name=call["name"], args=call.get("args", {}))
-            )
+            records.append(ToolCallRecord(name=call["name"], args=call.get("args", {})))
     return records
+
+
+def _message_text(message: object) -> str:
+    """Return the plain text of a message.
+
+    Providers differ: some (Groq, OpenAI) put a plain string in ``content``,
+    while others (Gemini, Anthropic) return a list of content blocks such as
+    ``[{"type": "text", "text": "…"}]``. This normalises both to a clean
+    string so the API never leaks raw block dictionaries to callers.
+    """
+
+    content = getattr(message, "content", message)
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and isinstance(block.get("text"), str):
+                parts.append(block["text"])
+        return "".join(parts).strip()
+    return str(content)

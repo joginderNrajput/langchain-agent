@@ -40,9 +40,24 @@ _NAMES: dict[str, float] = {"pi": math.pi, "e": math.e, "tau": math.tau}
 _FUNCS: dict[str, Callable[..., float]] = {
     name: getattr(math, name)
     for name in (
-        "sqrt", "sin", "cos", "tan", "asin", "acos", "atan",
-        "log", "log10", "log2", "exp", "floor", "ceil",
-        "factorial", "fabs", "degrees", "radians", "pow",
+        "sqrt",
+        "sin",
+        "cos",
+        "tan",
+        "asin",
+        "acos",
+        "atan",
+        "log",
+        "log10",
+        "log2",
+        "exp",
+        "floor",
+        "ceil",
+        "factorial",
+        "fabs",
+        "degrees",
+        "radians",
+        "pow",
     )
 }
 _FUNCS["abs"] = abs
@@ -70,9 +85,7 @@ def _evaluate(node: ast.AST) -> float | int:
         left = _evaluate(node.left)
         right = _evaluate(node.right)
         if isinstance(node.op, ast.Pow) and abs(float(right)) > _MAX_ABS_POWER_EXPONENT:
-            raise ValueError(
-                f"Exponent magnitude must be <= {_MAX_ABS_POWER_EXPONENT}"
-            )
+            raise ValueError(f"Exponent magnitude must be <= {_MAX_ABS_POWER_EXPONENT}")
         return bin_op(left, right)
     if isinstance(node, ast.UnaryOp):
         unary_op = _UNARY_OPS.get(type(node.op))
@@ -102,10 +115,7 @@ def calculator(expression: str) -> str:
 
     try:
         if len(expression) > _MAX_EXPRESSION_LENGTH:
-            return (
-                "Error: expression is too long "
-                f"(max {_MAX_EXPRESSION_LENGTH} characters)."
-            )
+            return f"Error: expression is too long (max {_MAX_EXPRESSION_LENGTH} characters)."
         tree = ast.parse(expression, mode="eval")
         if sum(1 for _ in ast.walk(tree)) > _MAX_AST_NODES:
             return "Error: expression is too complex."

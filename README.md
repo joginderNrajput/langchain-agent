@@ -113,6 +113,61 @@ uv run research-agent chat
 
 Use `-t/--thread <id>` on `ask`/`chat` to keep separate conversation memories.
 
+---
+
+## Run as an HTTP API (production)
+
+The agent also ships as a FastAPI service. The agent is built once at startup
+and shared across requests; routes add auth, rate limiting, a request timeout,
+health probes, and Prometheus metrics.
+
+```bash
+# configure (set GROQ_API_KEY, and API_KEYS to require an X-API-Key header)
+cp .env.example .env
+
+# run locally
+uv run research-agent-api          # → http://localhost:8000  (docs at /docs)
+
+# or multi-worker via gunicorn (production)
+gunicorn agentic_research_agent.api.app:app \
+  -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000 --timeout 120
+```
+
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/v1/ask` | POST | Answer a question → `AgentResponse` (auth + rate-limited). |
+| `/v1/stream` | POST | Stream the run as Server-Sent Events. |
+| `/health/live` | GET | Liveness probe. |
+| `/health/ready` | GET | Readiness (vector store + LLM reachable). |
+| `/metrics` | GET | Prometheus metrics. |
+
+```bash
+curl -X POST http://localhost:8000/v1/ask \
+  -H "Content-Type: application/json" -H "X-API-Key: $KEY" \
+  -d '{"question": "What is 23 * 19?", "thread_id": "demo"}'
+```
+
+### Durable conversation memory
+
+Set `CHECKPOINTER` to persist threads across restarts / replicas:
+
+```bash
+CHECKPOINTER=sqlite                              # single node, durable
+CHECKPOINTER=postgres POSTGRES_DSN=postgresql://…  # multi-replica (needs the postgres extra)
+```
+
+Install the Postgres backend with `uv sync --extra postgres`.
+
+### Containers
+
+```bash
+docker build -t agentic-research-agent .
+docker compose up --build        # API + Postgres (pgvector image) stack
+```
+
+See [docs/production-deployment-guide.html](docs/production-deployment-guide.html)
+for deployment strategies, scaling, security, and the full operational guide.
+
 ## Use it as a library
 
 ```python

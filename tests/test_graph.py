@@ -74,7 +74,7 @@ def test_groq_failed_generation_tool_call_is_recovered() -> None:
     responses = [
         RuntimeError(
             "Error code: 400 - {'error': {'code': 'tool_use_failed', "
-            "'failed_generation': '<function=calculator{\"expression\": \"2 + 2\"}"
+            '\'failed_generation\': \'<function=calculator{"expression": "2 + 2"}'
             "</function>'}}"
         ),
         AIMessage(content="The answer is 4."),
@@ -102,11 +102,11 @@ def test_non_tool_use_provider_errors_still_raise() -> None:
 @pytest.mark.parametrize(
     "failed_generation",
     [
-        '<function=calculator{"expression": "2 + 2"}</function>',          # no '>'
-        '<function=calculator>{"expression": "2 + 2"}</function>',         # with '>'
-        '<function=calculator>{"expression": "2 + 2"}',                    # no closing tag
+        '<function=calculator{"expression": "2 + 2"}</function>',  # no '>'
+        '<function=calculator>{"expression": "2 + 2"}</function>',  # with '>'
+        '<function=calculator>{"expression": "2 + 2"}',  # no closing tag
         '<tool_call>{"name": "calculator", "arguments": {"expression": "2 + 2"}}</tool_call>',
-        '{"name": "calculator", "parameters": {"expression": "2 + 2"}}',   # bare JSON object
+        '{"name": "calculator", "parameters": {"expression": "2 + 2"}}',  # bare JSON object
     ],
 )
 def test_failed_generation_formats_are_recovered(failed_generation: str) -> None:

@@ -223,7 +223,7 @@ LLM_MODEL=llama-3.3-70b-versatile
 GROQ_API_KEY=your_real_key_here</code></pre>
       <p>For OpenAI:</p>
       <pre><code>LLM_PROVIDER=openai
-LLM_MODEL=gpt-4.1-mini
+LLM_MODEL=gpt-4o-mini
 OPENAI_API_KEY=your_real_key_here</code></pre>
       <p>For Anthropic:</p>
       <pre><code>LLM_PROVIDER=anthropic
@@ -304,7 +304,7 @@ PY</code></pre>
           <tr><td><code>ENVIRONMENT</code></td><td>No</td><td><code>development</code></td><td>Use <code>production</code> in production to enable production-oriented behavior such as JSON logs.</td></tr>
           <tr><td><code>LOG_LEVEL</code></td><td>No</td><td><code>INFO</code></td><td>Allowed values: <code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code>, <code>CRITICAL</code>.</td></tr>
           <tr><td><code>LLM_PROVIDER</code></td><td>No</td><td><code>groq</code></td><td>Allowed values: <code>groq</code>, <code>anthropic</code>, <code>openai</code>, <code>ollama</code>.</td></tr>
-          <tr><td><code>LLM_MODEL</code></td><td>No</td><td><code>llama-3.3-70b-versatile</code></td><td>Must be valid for the selected provider.</td></tr>
+          <tr><td><code>LLM_MODEL</code></td><td>No</td><td>provider-specific</td><td>Optional. Leave unset to use the selected provider's default (groq → <code>llama-3.3-70b-versatile</code>, openai → <code>gpt-4o-mini</code>, anthropic → <code>claude-sonnet-4-6</code>, ollama → <code>llama3.1</code>). Set to override; an explicit value must be valid for the chosen provider.</td></tr>
           <tr><td><code>LLM_TEMPERATURE</code></td><td>No</td><td><code>0.1</code></td><td>Validated between <code>0.0</code> and <code>2.0</code>.</td></tr>
           <tr><td><code>LLM_MAX_TOKENS</code></td><td>No</td><td><code>1024</code></td><td>Maximum model response token budget.</td></tr>
           <tr><td><code>LLM_TIMEOUT_SECONDS</code></td><td>No</td><td><code>60</code></td><td>Timeout passed into supported LLM providers.</td></tr>

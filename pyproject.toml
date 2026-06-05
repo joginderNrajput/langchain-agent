@@ -11,6 +11,8 @@ dependencies = [
     "ddgs>=9.0.0",
     "duckduckgo-search>=8.1.1",
     "faiss-cpu>=1.14.2",
+    "fastapi>=0.136.3",
+    "gunicorn>=26.0.0",
     "ipykernel>=7.2.0",
     "jupyter>=1.1.1",
     "langchain>=1.3.4",
@@ -25,6 +27,7 @@ dependencies = [
     "langchain-openai>=1.2.2",
     "langgraph>=1.2.4",
     "langgraph-checkpoint>=4.1.1",
+    "langgraph-checkpoint-sqlite>=3.1.0",
     "langgraph-prebuilt>=1.1.0",
     "langsmith>=0.8.9",
     "pydantic>=2.13.4",
@@ -37,11 +40,20 @@ dependencies = [
     "tiktoken>=0.13.0",
     "typer>=0.15.0",
     "unstructured>=0.22.31",
+    "uvicorn[standard]>=0.48.0",
     "wikipedia>=1.4.0",
 ]
 
 [project.scripts]
 research-agent = "agentic_research_agent.cli:main"
+research-agent-api = "agentic_research_agent.api.server:main"
+
+[project.optional-dependencies]
+# Durable, multi-replica conversation state. Install with: uv sync --extra postgres
+postgres = [
+    "langgraph-checkpoint-postgres>=2.0.0",
+    "psycopg[binary]>=3.2.0",
+]
 
 [dependency-groups]
 dev = [
@@ -70,6 +82,10 @@ extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI's dependency-injection idiom requires Depends() in argument defaults.
+"src/agentic_research_agent/api/*" = ["B008"]
 
 [tool.mypy]
 python_version = "3.13"
