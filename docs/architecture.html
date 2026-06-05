@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentic Research Agent - Enterprise Architecture</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #5d6d7e;
+      --line: #d5dde5;
+      --panel: #ffffff;
+      --band: #f4f7fa;
+      --accent: #1f7a8c;
+      --accent-2: #bf6b21;
+      --good: #2d7d46;
+      --risk: #9a3412;
+      --code: #eef3f8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--band);
+      line-height: 1.55;
+    }
+    header {
+      background: #0f2f3a;
+      color: #fff;
+      padding: 48px 24px 36px;
+      border-bottom: 6px solid var(--accent-2);
+    }
+    main { max-width: 1180px; margin: 0 auto; padding: 28px 20px 56px; }
+    h1, h2, h3 { line-height: 1.18; margin: 0 0 12px; }
+    h1 { font-size: clamp(2rem, 4vw, 3.4rem); }
+    h2 { font-size: 1.65rem; margin-top: 34px; }
+    h3 { font-size: 1.12rem; margin-top: 22px; }
+    p { margin: 0 0 14px; }
+    .lede { max-width: 880px; color: #d9e8ed; font-size: 1.08rem; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+      font-size: .92rem;
+    }
+    .pill {
+      border: 1px solid rgba(255,255,255,.28);
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 18px 0;
+      box-shadow: 0 8px 28px rgba(23,32,42,.05);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+    }
+    .card strong { display: block; margin-bottom: 6px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: .94rem;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th { background: #eaf1f5; }
+    code {
+      background: var(--code);
+      border: 1px solid #d9e2ea;
+      border-radius: 5px;
+      padding: 1px 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .92em;
+    }
+    pre {
+      overflow-x: auto;
+      background: #102a33;
+      color: #eaf7fa;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: .9rem;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      margin: 12px 0 4px;
+    }
+    .caption { color: var(--muted); font-size: .9rem; }
+    .status-good { color: var(--good); font-weight: 700; }
+    .status-watch { color: var(--risk); font-weight: 700; }
+    ul { margin-top: 8px; padding-left: 22px; }
+    @media print {
+      body { background: #fff; }
+      section { break-inside: avoid; box-shadow: none; }
+      header { color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Agentic Research Agent</h1>
+    <p class="lede">Enterprise architecture and technical design document for a provider-agnostic LangChain and LangGraph research assistant with RAG, web search, calculator tooling, typed configuration, CLI entry points, and automated tests.</p>
+    <div class="meta">
+      <span class="pill">Document type: Architecture Review</span>
+      <span class="pill">Generated: 2026-06-04</span>
+      <span class="pill">Runtime: Python 3.13</span>
+      <span class="pill">Package: agentic_research_agent</span>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Executive Summary</h2>
+      <p>The project is structured as a small but credible enterprise reference implementation. The code separates configuration, model construction, orchestration, tools, schemas, and CLI delivery. The agent uses an explicit LangGraph ReAct loop, which makes control flow auditable and testable.</p>
+      <div class="grid">
+        <div class="card"><strong class="status-good">Strength</strong>Clear layered package layout and a public service facade through <code>ResearchAgent</code>.</div>
+        <div class="card"><strong class="status-good">Strength</strong>Provider-agnostic LLM factory isolates concrete SDK choices from orchestration code.</div>
+        <div class="card"><strong class="status-good">Improved</strong>Added explicit runtime dependencies, stricter RAG configuration validation, structured run metadata, production JSON logging, and calculator resource limits.</div>
+        <div class="card"><strong class="status-watch">Next maturity step</strong>For production deployment, replace in-memory checkpointing with durable storage and add centralized tracing, auth, and deployment manifests.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>System Context</h2>
+      <svg viewBox="0 0 980 360" role="img" aria-label="System context diagram">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#1f7a8c"></path>
+          </marker>
+        </defs>
+        <rect x="32" y="130" width="150" height="80" rx="8" fill="#eaf1f5" stroke="#9fb4c3"></rect>
+        <text x="107" y="164" text-anchor="middle" font-size="16" font-weight="700">User</text>
+        <text x="107" y="188" text-anchor="middle" font-size="13">CLI or library</text>
+
+        <rect x="300" y="58" width="360" height="244" rx="8" fill="#ffffff" stroke="#1f7a8c" stroke-width="2"></rect>
+        <text x="480" y="92" text-anchor="middle" font-size="18" font-weight="700">Agentic Research Agent</text>
+        <rect x="330" y="120" width="132" height="54" rx="6" fill="#eaf7fa" stroke="#b8dbe2"></rect>
+        <text x="396" y="153" text-anchor="middle" font-size="13">Service Facade</text>
+        <rect x="508" y="120" width="122" height="54" rx="6" fill="#eaf7fa" stroke="#b8dbe2"></rect>
+        <text x="569" y="153" text-anchor="middle" font-size="13">LangGraph</text>
+        <rect x="330" y="210" width="132" height="54" rx="6" fill="#fff4e8" stroke="#e7c09a"></rect>
+        <text x="396" y="243" text-anchor="middle" font-size="13">Tools</text>
+        <rect x="508" y="210" width="122" height="54" rx="6" fill="#fff4e8" stroke="#e7c09a"></rect>
+        <text x="569" y="243" text-anchor="middle" font-size="13">Typed Config</text>
+
+        <rect x="780" y="32" width="158" height="62" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="859" y="58" text-anchor="middle" font-size="14" font-weight="700">LLM Provider</text>
+        <text x="859" y="78" text-anchor="middle" font-size="12">Groq, OpenAI, etc.</text>
+        <rect x="780" y="144" width="158" height="62" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="859" y="170" text-anchor="middle" font-size="14" font-weight="700">Web Search</text>
+        <text x="859" y="190" text-anchor="middle" font-size="12">DuckDuckGo</text>
+        <rect x="780" y="256" width="158" height="62" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="859" y="282" text-anchor="middle" font-size="14" font-weight="700">Knowledge Base</text>
+        <text x="859" y="302" text-anchor="middle" font-size="12">Local docs + Chroma</text>
+
+        <line x1="182" y1="170" x2="300" y2="170" stroke="#1f7a8c" stroke-width="2" marker-end="url(#arrow)"></line>
+        <line x1="660" y1="110" x2="780" y2="63" stroke="#1f7a8c" stroke-width="2" marker-end="url(#arrow)"></line>
+        <line x1="660" y1="176" x2="780" y2="176" stroke="#1f7a8c" stroke-width="2" marker-end="url(#arrow)"></line>
+        <line x1="660" y1="246" x2="780" y2="287" stroke="#1f7a8c" stroke-width="2" marker-end="url(#arrow)"></line>
+      </svg>
+      <p class="caption">The application boundary is clean: external systems are accessed only through dedicated infrastructure/tool modules.</p>
+    </section>
+
+    <section>
+      <h2>Layered Architecture</h2>
+      <table>
+        <thead>
+          <tr><th>Layer</th><th>Primary modules</th><th>Responsibility</th><th>Enterprise concern</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Delivery</td><td><code>cli.py</code>, library import</td><td>Receives user input and renders answers.</td><td>Keep UI concerns out of agent orchestration.</td></tr>
+          <tr><td>Application service</td><td><code>agents/service.py</code></td><td>Builds dependencies and exposes <code>ask</code> and <code>stream</code>.</td><td>Stable boundary for future API, workers, or schedulers.</td></tr>
+          <tr><td>Orchestration</td><td><code>agents/graph.py</code>, <code>state.py</code>, <code>prompts.py</code></td><td>Defines ReAct loop, state reducer, and system behavior.</td><td>Auditable control flow and deterministic test surface.</td></tr>
+          <tr><td>Capabilities</td><td><code>tools/*</code></td><td>Calculator, web search, and RAG retrieval.</td><td>Each tool can be secured, tested, and monitored independently.</td></tr>
+          <tr><td>Infrastructure</td><td><code>core/llm.py</code>, <code>core/logging.py</code>, <code>config/settings.py</code></td><td>Provider factory, logging, and environment-driven settings.</td><td>Deployment portability and operational control.</td></tr>
+          <tr><td>Contracts</td><td><code>schemas/models.py</code></td><td>Pydantic request and response models.</td><td>API-ready validation and serialization.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Agent Control Flow</h2>
+      <svg viewBox="0 0 1000 300" role="img" aria-label="LangGraph ReAct control flow">
+        <defs>
+          <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#bf6b21"></path>
+          </marker>
+        </defs>
+        <circle cx="88" cy="150" r="34" fill="#eaf1f5" stroke="#9fb4c3"></circle>
+        <text x="88" y="155" text-anchor="middle" font-size="13" font-weight="700">START</text>
+        <rect x="180" y="112" width="170" height="76" rx="8" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="265" y="143" text-anchor="middle" font-size="14" font-weight="700">agent node</text>
+        <text x="265" y="164" text-anchor="middle" font-size="12">LLM + system prompt</text>
+        <polygon points="470,90 600,150 470,210 340,150" fill="#fff4e8" stroke="#e7b678"></polygon>
+        <text x="470" y="144" text-anchor="middle" font-size="13" font-weight="700">Tool calls?</text>
+        <text x="470" y="165" text-anchor="middle" font-size="12">LangGraph condition</text>
+        <rect x="670" y="112" width="170" height="76" rx="8" fill="#f7fbf7" stroke="#a7cfae"></rect>
+        <text x="755" y="143" text-anchor="middle" font-size="14" font-weight="700">tools node</text>
+        <text x="755" y="164" text-anchor="middle" font-size="12">execute selected tools</text>
+        <circle cx="915" cy="150" r="34" fill="#eaf1f5" stroke="#9fb4c3"></circle>
+        <text x="915" y="155" text-anchor="middle" font-size="13" font-weight="700">END</text>
+        <line x1="122" y1="150" x2="180" y2="150" stroke="#bf6b21" stroke-width="2" marker-end="url(#flow-arrow)"></line>
+        <line x1="350" y1="150" x2="340" y2="150" stroke="#bf6b21" stroke-width="2" marker-end="url(#flow-arrow)"></line>
+        <line x1="600" y1="150" x2="670" y2="150" stroke="#bf6b21" stroke-width="2" marker-end="url(#flow-arrow)"></line>
+        <path d="M755 112 C755 42 265 42 265 112" fill="none" stroke="#bf6b21" stroke-width="2" marker-end="url(#flow-arrow)"></path>
+        <line x1="600" y1="150" x2="881" y2="150" stroke="#bf6b21" stroke-width="2" marker-end="url(#flow-arrow)"></line>
+        <text x="632" y="137" font-size="12">yes</text>
+        <text x="640" y="178" font-size="12">no</text>
+      </svg>
+      <p>The graph is intentionally explicit: the model decides whether to answer or request tools, <code>ToolNode</code> executes requested tools, and the result returns to the model until a final answer is produced.</p>
+    </section>
+
+    <section>
+      <h2>RAG Data Flow</h2>
+      <svg viewBox="0 0 980 310" role="img" aria-label="RAG ingestion and query flow">
+        <defs>
+          <marker id="rag-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#1f7a8c"></path>
+          </marker>
+        </defs>
+        <rect x="42" y="62" width="156" height="64" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="120" y="90" text-anchor="middle" font-size="14" font-weight="700">Source docs</text>
+        <text x="120" y="110" text-anchor="middle" font-size="12">md, txt, pdf</text>
+        <rect x="278" y="62" width="156" height="64" rx="8" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="356" y="90" text-anchor="middle" font-size="14" font-weight="700">Chunking</text>
+        <text x="356" y="110" text-anchor="middle" font-size="12">size + overlap</text>
+        <rect x="514" y="62" width="156" height="64" rx="8" fill="#fff4e8" stroke="#e7b678"></rect>
+        <text x="592" y="90" text-anchor="middle" font-size="14" font-weight="700">Embeddings</text>
+        <text x="592" y="110" text-anchor="middle" font-size="12">HuggingFace</text>
+        <rect x="750" y="62" width="156" height="64" rx="8" fill="#f7fbf7" stroke="#a7cfae"></rect>
+        <text x="828" y="90" text-anchor="middle" font-size="14" font-weight="700">Chroma store</text>
+        <text x="828" y="110" text-anchor="middle" font-size="12">persistent index</text>
+        <rect x="278" y="196" width="156" height="64" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="356" y="224" text-anchor="middle" font-size="14" font-weight="700">User query</text>
+        <text x="356" y="244" text-anchor="middle" font-size="12">tool input</text>
+        <rect x="514" y="196" width="156" height="64" rx="8" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="592" y="224" text-anchor="middle" font-size="14" font-weight="700">Similarity search</text>
+        <text x="592" y="244" text-anchor="middle" font-size="12">top k chunks</text>
+        <rect x="750" y="196" width="156" height="64" rx="8" fill="#fff4e8" stroke="#e7b678"></rect>
+        <text x="828" y="224" text-anchor="middle" font-size="14" font-weight="700">Cited context</text>
+        <text x="828" y="244" text-anchor="middle" font-size="12">returned to LLM</text>
+        <line x1="198" y1="94" x2="278" y2="94" stroke="#1f7a8c" stroke-width="2" marker-end="url(#rag-arrow)"></line>
+        <line x1="434" y1="94" x2="514" y2="94" stroke="#1f7a8c" stroke-width="2" marker-end="url(#rag-arrow)"></line>
+        <line x1="670" y1="94" x2="750" y2="94" stroke="#1f7a8c" stroke-width="2" marker-end="url(#rag-arrow)"></line>
+        <line x1="434" y1="228" x2="514" y2="228" stroke="#1f7a8c" stroke-width="2" marker-end="url(#rag-arrow)"></line>
+        <line x1="670" y1="228" x2="750" y2="228" stroke="#1f7a8c" stroke-width="2" marker-end="url(#rag-arrow)"></line>
+        <path d="M828 126 C828 160 592 160 592 196" fill="none" stroke="#1f7a8c" stroke-width="2" marker-end="url(#rag-arrow)"></path>
+      </svg>
+      <p>Ingestion is separated from query execution. Documents are loaded from <code>data/knowledge_base</code>, chunked, embedded locally, and persisted under <code>data/vector_store</code>. Query-time retrieval returns source filenames with excerpts so final answers can cite evidence.</p>
+    </section>
+
+    <section>
+      <h2>Technical Details</h2>
+      <div class="grid">
+        <div class="card"><strong>Language and packaging</strong>Python 3.13, <code>pyproject.toml</code>, Hatchling build backend, console script <code>research-agent</code>.</div>
+        <div class="card"><strong>Agent framework</strong>LangChain chat model interface plus LangGraph <code>StateGraph</code> and <code>ToolNode</code>.</div>
+        <div class="card"><strong>Configuration</strong>Pydantic Settings reads environment variables and optional <code>.env</code> file.</div>
+        <div class="card"><strong>Retrieval</strong>Chroma vector store with local HuggingFace embeddings and recursive character splitting.</div>
+        <div class="card"><strong>Observability</strong>Central logging, production JSON formatter, run id, duration, thread id, and tool call count.</div>
+        <div class="card"><strong>Quality</strong>Offline pytest suite covers graph routing, configuration validation, calculator safety, and provider factory errors.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Configuration Matrix</h2>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Variables</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Application</td><td><code>ENVIRONMENT</code>, <code>LOG_LEVEL</code></td><td>Controls environment-specific behavior and log verbosity.</td></tr>
+          <tr><td>LLM</td><td><code>LLM_PROVIDER</code>, <code>LLM_MODEL</code>, <code>LLM_TEMPERATURE</code>, <code>LLM_MAX_TOKENS</code>, <code>LLM_TIMEOUT_SECONDS</code></td><td>Selects model provider and inference behavior.</td></tr>
+          <tr><td>Credentials</td><td><code>GROQ_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>OLLAMA_BASE_URL</code></td><td>Provider-specific connection details. Secrets must remain outside source control.</td></tr>
+          <tr><td>RAG</td><td><code>EMBEDDING_MODEL</code>, <code>KNOWLEDGE_BASE_DIR</code>, <code>VECTOR_STORE_DIR</code>, <code>CHUNK_SIZE</code>, <code>CHUNK_OVERLAP</code>, <code>RETRIEVER_TOP_K</code></td><td>Controls ingestion, vector storage, and retrieval quality.</td></tr>
+          <tr><td>Agent behavior</td><td><code>MAX_SEARCH_RESULTS</code>, <code>RECURSION_LIMIT</code></td><td>Bounds external search volume and graph execution depth.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Security and Reliability Review</h2>
+      <table>
+        <thead>
+          <tr><th>Area</th><th>Current control</th><th>Recommendation</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Secrets</td><td>Environment variables and <code>.env</code> exclusion.</td><td>Use a managed secret store in staging and production.</td></tr>
+          <tr><td>Tool execution</td><td>Calculator uses AST allow-list, no <code>eval</code>, with length and complexity limits.</td><td>Add policy checks before introducing tools that perform writes or network mutations.</td></tr>
+          <tr><td>External search</td><td>DuckDuckGo errors are caught and returned as recoverable tool text.</td><td>Add retry/backoff and provider abstraction for production search SLAs.</td></tr>
+          <tr><td>Memory</td><td>In-process <code>MemorySaver</code> keeps thread context during process lifetime.</td><td>Use durable checkpointer such as Postgres or SQLite for long-lived sessions.</td></tr>
+          <tr><td>Observability</td><td>Run id, duration, tool count, and JSON logs in production.</td><td>Integrate OpenTelemetry or LangSmith traces with alerting dashboards.</td></tr>
+          <tr><td>Data governance</td><td>Local RAG documents and generated vector store are separated.</td><td>Add document provenance, retention policy, and PII scanning before indexing sensitive corpora.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Deployment View</h2>
+      <pre><code>local developer
+  uv sync
+  cp .env.example .env
+  uv run research-agent ingest
+  uv run research-agent ask "question"
+
+production target
+  container image
+  environment variables from secret/config store
+  persistent vector_store volume or prebuilt index artifact
+  durable LangGraph checkpointer
+  JSON logs to centralized collector
+  scheduled ingestion pipeline for knowledge base updates</code></pre>
+      <p>The current project is CLI-first, but the service layer is already suitable for a FastAPI handler, queue consumer, or scheduled batch worker because the outer delivery mechanism only needs to call <code>ResearchAgent.ask()</code> or <code>ResearchAgent.stream()</code>.</p>
+    </section>
+
+    <section>
+      <h2>Implemented Review Changes</h2>
+      <ul>
+        <li>Added explicit package dependencies for <code>pydantic-settings</code> and <code>typer</code>.</li>
+        <li>Added validation that <code>CHUNK_OVERLAP</code> must be smaller than <code>CHUNK_SIZE</code>.</li>
+        <li>Added production JSON logging support while preserving Rich logs for local development.</li>
+        <li>Added <code>run_id</code> and <code>duration_ms</code> to agent responses for observability.</li>
+        <li>Added calculator length, AST complexity, and exponent magnitude guards.</li>
+        <li>Added tests for retrieval config validation and calculator resource limits.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Validation Evidence</h2>
+      <table>
+        <thead>
+          <tr><th>Check</th><th>Result</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>uv run pytest</code></td><td class="status-good">Passed</td><td>30 tests passed.</td></tr>
+          <tr><td><code>uv run ruff check .</code></td><td class="status-good">Passed</td><td>No lint violations found.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Production Readiness Roadmap</h2>
+      <ol>
+        <li>Expose the service through FastAPI with authentication, request validation, rate limits, and health checks.</li>
+        <li>Move checkpointing from memory to a durable backend and define conversation retention rules.</li>
+        <li>Add OpenTelemetry or LangSmith tracing for model calls, tool calls, latency, and failures.</li>
+        <li>Introduce CI with pytest, Ruff, mypy, dependency audit, and build verification.</li>
+        <li>Containerize the application and define separate dev, staging, and production configuration profiles.</li>
+        <li>Add RAG evaluation: retrieval precision, answer faithfulness, citation quality, and regression datasets.</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>

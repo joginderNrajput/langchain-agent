@@ -1,0 +1,53 @@
+# ─────────────────────────────────────────────────────────────
+# Core LangChain + LangGraph
+# ─────────────────────────────────────────────────────────────
+langchain                 # Core framework: chains, prompts, runnables
+langchain-core            # Base abstractions (messages, runnables, tools)
+langchain-community       # Community integrations (loaders, tools, vectorstores)
+langgraph                 # Build stateful, multi-step agents as graphs
+langgraph-checkpoint      # Persistence/memory for LangGraph state
+langgraph-prebuilt        # Prebuilt agent patterns (e.g. ReAct)
+langsmith                 # Tracing, debugging & evaluation of agents
+
+# ─────────────────────────────────────────────────────────────
+# LLM Providers (pick the ones you use; all listed for convenience)
+# ─────────────────────────────────────────────────────────────
+langchain-openai          # OpenAI / Azure OpenAI models
+langchain-anthropic       # Anthropic Claude models
+langchain-google-genai    # Google Gemini models
+langchain-groq            # Groq (fast inference)
+langchain-ollama          # Local models via Ollama
+langchain-huggingface     # Hugging Face models & embeddings
+
+# ─────────────────────────────────────────────────────────────
+# Vector stores & embeddings (RAG)
+# ─────────────────────────────────────────────────────────────
+langchain-chroma          # Chroma vector store integration
+chromadb                  # Chroma DB engine
+faiss-cpu                 # FAISS similarity search (CPU)
+sentence-transformers     # Local embedding models
+
+# ─────────────────────────────────────────────────────────────
+# Tools / agent capabilities
+# ─────────────────────────────────────────────────────────────
+duckduckgo-search         # Free web search tool
+wikipedia                 # Wikipedia tool
+arxiv                     # arXiv research papers tool
+tavily-python             # Tavily search API (great for agents)
+
+# ─────────────────────────────────────────────────────────────
+# Document loading & parsing (for RAG)
+# ─────────────────────────────────────────────────────────────
+pypdf                     # PDF loading
+beautifulsoup4            # HTML parsing / web scraping
+unstructured              # Parse many file formats
+tiktoken                  # Token counting for OpenAI models
+
+# ─────────────────────────────────────────────────────────────
+# Utilities
+# ─────────────────────────────────────────────────────────────
+python-dotenv             # Load API keys from a .env file
+pydantic                  # Data validation / structured outputs
+rich                      # Pretty terminal output
+jupyter                   # Notebooks for experimentation
+ipykernel                 # Jupyter kernel support
