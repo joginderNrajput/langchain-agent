@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentic Research Agent - Production Deployment Guide</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5d6d7e;
+      --line: #d5dde5;
+      --panel: #ffffff;
+      --band: #f4f7fa;
+      --code-bg: #102a33;
+      --code-fg: #eaf7fa;
+      --accent: #1f7a8c;
+      --accent-2: #bf6b21;
+      --good: #2d7d46;
+      --warn: #9a3412;
+      --soft: #eaf1f5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--band);
+      line-height: 1.58;
+    }
+    header {
+      background: #10313b;
+      color: #fff;
+      padding: 50px 24px 36px;
+      border-bottom: 6px solid var(--accent-2);
+    }
+    main { max-width: 1180px; margin: 0 auto; padding: 28px 20px 64px; }
+    h1, h2, h3, h4 { line-height: 1.18; margin: 0 0 12px; }
+    h1 { font-size: clamp(2rem, 4vw, 3.3rem); }
+    h2 { font-size: 1.62rem; margin-top: 30px; }
+    h3 { font-size: 1.15rem; margin-top: 22px; color: #123; }
+    h4 { font-size: 1rem; margin-top: 16px; color: var(--accent); }
+    p { margin: 0 0 14px; }
+    a { color: var(--accent); }
+    .lede { max-width: 940px; color: #d9e8ed; font-size: 1.08rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; font-size: .92rem; }
+    .pill { border: 1px solid rgba(255,255,255,.28); padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.08); }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 18px 0;
+      box-shadow: 0 8px 28px rgba(23,32,42,.05);
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+    .card { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: #fff; }
+    .card strong { display: block; margin-bottom: 6px; }
+    .callout { border-left: 5px solid var(--accent); background: #eef8fa; padding: 14px 16px; margin: 14px 0; border-radius: 0 8px 8px 0; }
+    .warning { border-left-color: var(--warn); background: #fff4ec; }
+    .good-note { border-left-color: var(--good); background: #eef8f1; }
+    code { background: #eef3f8; border: 1px solid #d9e2ea; border-radius: 5px; padding: 1px 5px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .9em; }
+    pre { overflow-x: auto; background: var(--code-bg); color: var(--code-fg); border-radius: 8px; padding: 16px; font-size: .87rem; margin: 12px 0 16px; }
+    pre code { background: transparent; border: 0; color: inherit; padding: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: .92rem; }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top; text-align: left; }
+    th { background: var(--soft); }
+    ol, ul { padding-left: 22px; }
+    li { margin: 4px 0; }
+    .ok { color: var(--good); font-weight: 700; }
+    .watch { color: var(--warn); font-weight: 700; }
+    .sev-h { color: #fff; background: var(--warn); padding: 2px 8px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+    .sev-m { color: #fff; background: var(--accent-2); padding: 2px 8px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+    .sev-l { color: #fff; background: var(--good); padding: 2px 8px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+    svg { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; margin: 12px 0 4px; }
+    .caption { color: var(--muted); font-size: .9rem; }
+    .toc { columns: 2; column-gap: 30px; }
+    .toc a { display: block; padding: 3px 0; }
+    @media print {
+      body { background: #fff; }
+      section { break-inside: avoid; box-shadow: none; }
+      header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .toc { columns: 2; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Production Deployment Guide</h1>
+    <p class="lede">How to take the Agentic Research Agent from a local CLI package to a reliable, observable, and secure production service — covering the application changes required, the deployment strategies available, and the industry practices used to run LLM agents in production.</p>
+    <div class="meta">
+      <span class="pill">Document type: Deployment &amp; Operations Strategy</span>
+      <span class="pill">Generated: 2026-06-05</span>
+      <span class="pill">Project: agentic-ai-learning</span>
+      <span class="pill">Audience: Platform / MLOps / Backend</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- CONTENTS -->
+    <section>
+      <h2>Contents</h2>
+      <div class="toc">
+        <a href="#scope">1. Purpose &amp; Scope</a>
+        <a href="#assessment">2. Production Readiness Assessment</a>
+        <a href="#changes">3. Required Application Changes</a>
+        <a href="#target">4. Target Production Architecture</a>
+        <a href="#strategies">5. Deployment Strategies</a>
+        <a href="#release">6. Release &amp; Rollout Strategies</a>
+        <a href="#practices">7. Industry Best Practices for Agents</a>
+        <a href="#cicd">8. CI/CD with Evaluation Gates</a>
+        <a href="#scaling">9. Scaling &amp; Capacity Planning</a>
+        <a href="#observability">10. Monitoring, SLOs &amp; Alerting</a>
+        <a href="#security">11. Security &amp; Compliance</a>
+        <a href="#roadmap">12. Phased Production Roadmap</a>
+      </div>
+    </section>
+
+    <!-- 1. SCOPE -->
+    <section id="scope">
+      <h2>1. Purpose &amp; Scope</h2>
+      <p>The agent today is a well-structured Python package exposing a <code>research-agent</code> CLI and a <code>ResearchAgent</code> facade. That is production-grade for <em>batch, worker, and internal-tool</em> use. To serve real users concurrently over a network — the most common production target — the application needs a thin set of additions around its already-clean core. This guide describes those additions, then the strategies and practices to operate them.</p>
+      <div class="grid">
+        <div class="card"><strong class="ok">Already production-shaped</strong>Layered package, provider-agnostic LLM factory, typed/validated config, structured + JSON logging, run IDs &amp; durations, tool-call resilience, tests/lint/types green.</div>
+        <div class="card"><strong class="watch">Needs adding for a service</strong>HTTP API, durable conversation state, health/readiness probes, authn/z, rate limiting, distributed tracing, and a shared (not file-local) vector store.</div>
+        <div class="card"><strong>Guiding principle</strong>Treat the LLM agent like any other stateful network service: make it stateless, externalize its state, bound every external call, and measure everything.</div>
+      </div>
+    </section>
+
+    <!-- 2. ASSESSMENT -->
+    <section id="assessment">
+      <h2>2. Production Readiness Assessment</h2>
+      <p>A gap analysis of the current codebase against the requirements of a multi-user production service. Severity reflects impact on a networked deployment; for batch/CLI use most items are not applicable.</p>
+      <table>
+        <thead><tr><th>Area</th><th>Current state</th><th>Gap</th><th>Severity</th></tr></thead>
+        <tbody>
+          <tr><td>Interface</td><td>Typer CLI + library facade</td><td>No HTTP/RPC surface for concurrent remote callers</td><td><span class="sev-h">High</span></td></tr>
+          <tr><td>Conversation state</td><td>In-process <code>MemorySaver</code></td><td>Lost on restart; not shared across replicas — breaks horizontal scaling</td><td><span class="sev-h">High</span></td></tr>
+          <tr><td>Vector store</td><td>Local Chroma file under <code>data/vector_store</code></td><td>Not safely shared by multiple replicas; tied to a node's disk</td><td><span class="sev-h">High</span></td></tr>
+          <tr><td>AuthN / AuthZ</td><td>None</td><td>No identity, quotas, or per-tenant isolation</td><td><span class="sev-h">High</span></td></tr>
+          <tr><td>Health checks</td><td>None</td><td>Orchestrators cannot determine liveness/readiness</td><td><span class="sev-m">Medium</span></td></tr>
+          <tr><td>Rate limiting / quotas</td><td>None</td><td>One caller can exhaust provider tokens/budget</td><td><span class="sev-m">Medium</span></td></tr>
+          <tr><td>Tracing / metrics</td><td>Structured logs + run metadata only</td><td>No span-level tracing of LLM/tool calls; no metrics endpoint</td><td><span class="sev-m">Medium</span></td></tr>
+          <tr><td>Resilience</td><td>Tool-call recovery + LLM timeout</td><td>No retry/backoff on 429s, no circuit breaker, no fallback model</td><td><span class="sev-m">Medium</span></td></tr>
+          <tr><td>Cost controls</td><td><code>max_tokens</code>, <code>recursion_limit</code></td><td>No per-request budget, caching, or model routing</td><td><span class="sev-m">Medium</span></td></tr>
+          <tr><td>Guardrails</td><td>Calculator hardening; safe tools</td><td>No input/output moderation or prompt-injection defense for untrusted users</td><td><span class="sev-m">Medium</span></td></tr>
+          <tr><td>Packaging</td><td>uv + hatchling; <code>py.typed</code></td><td>No Dockerfile/manifests in repo (runbook shows a pattern)</td><td><span class="sev-l">Low</span></td></tr>
+          <tr><td>CI/CD</td><td>Local test/lint/type gates</td><td>No automated pipeline or eval gates</td><td><span class="sev-l">Low</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout good-note"><strong>Bottom line:</strong> the core is sound. The work is additive — a service shell, externalized state, and operational controls — not a rewrite. None of the changes below touch the agent's reasoning logic.</div>
+    </section>
+
+    <!-- 3. CHANGES -->
+    <section id="changes">
+      <h2>3. Required Application Changes</h2>
+      <p>The most impactful, concrete changes, in priority order. All are additive and preserve the existing <code>ResearchAgent</code> contract.</p>
+
+      <h3>3.1 Add an HTTP API layer (FastAPI + ASGI server)</h3>
+      <p>Wrap the facade in a thin, async-capable API. Build the agent <strong>once</strong> at startup (it loads an embedding model and compiles the graph — expensive), then share it across requests. Never construct <code>ResearchAgent()</code> per request.</p>
+      <pre><code># src/agentic_research_agent/api/app.py
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Depends, HTTPException
+from agentic_research_agent import ResearchAgent
+from agentic_research_agent.schemas.models import AgentRequest, AgentResponse
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Build once: loads embeddings, compiles graph, opens checkpointer.
+    app.state.agent = ResearchAgent()
+    yield
+    # (close pools / flush traces here)
+
+app = FastAPI(title="Research Agent API", version="0.1.0", lifespan=lifespan)
+
+@app.post("/v1/ask", response_model=AgentResponse)
+async def ask(req: AgentRequest, _=Depends(verify_api_key)):
+    try:
+        # ask() is blocking; FastAPI runs sync deps in a threadpool.
+        return app.state.agent.ask(req.question, thread_id=req.thread_id)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="agent_run_failed") from exc</code></pre>
+      <p>Serve with <code>uvicorn</code> behind <code>gunicorn</code> for multiple workers:</p>
+      <pre><code>gunicorn agentic_research_agent.api.app:app \
+  -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000 --timeout 120</code></pre>
+      <div class="callout warning"><strong>Concurrency caveat:</strong> the local sentence-transformers model and a file-based Chroma store are not guaranteed thread/process-safe under heavy parallelism. Pair the API with §3.3 (shared vector DB) and bound worker count, or move embeddings to a dedicated service.</div>
+
+      <h3>3.2 Durable, shared conversation state (replace <code>MemorySaver</code>)</h3>
+      <p><code>MemorySaver</code> keeps thread state in one process's RAM — it is lost on restart and invisible to other replicas. For any multi-instance or restart-surviving deployment, use a durable checkpointer. The <code>service.py</code> already isolates this in one line.</p>
+      <pre><code># add dependency:  langgraph-checkpoint-postgres
+from langgraph.checkpoint.postgres import PostgresSaver
+
+# in ResearchAgent.__init__, choose by config:
+if settings.checkpointer == "postgres":
+    cp = PostgresSaver.from_conn_string(settings.postgres_dsn)
+    cp.setup()                      # idempotent: creates tables
+    self._checkpointer = cp
+else:
+    self._checkpointer = MemorySaver()   # dev/test default</code></pre>
+      <p>Add <code>checkpointer</code> and <code>postgres_dsn</code> fields to <code>Settings</code>. Use <code>SqliteSaver</code> for single-node persistence, <code>PostgresSaver</code> for multi-replica.</p>
+
+      <h3>3.3 Externalize the vector store</h3>
+      <p>A local Chroma file cannot be shared cleanly by multiple replicas and ties the service to one node's disk. Options, in increasing operational maturity:</p>
+      <table>
+        <thead><tr><th>Option</th><th>Fit</th></tr></thead>
+        <tbody>
+          <tr><td>Chroma in client/server mode</td><td>Minimal change; one shared Chroma server.</td></tr>
+          <tr><td><code>pgvector</code> (Postgres extension)</td><td>Reuse the same Postgres as the checkpointer — one datastore to operate.</td></tr>
+          <tr><td>Qdrant / Weaviate / Milvus</td><td>Purpose-built, scalable self-hosted vector DBs.</td></tr>
+          <tr><td>Pinecone / managed</td><td>Fully managed; least ops, usage-based cost.</td></tr>
+        </tbody>
+      </table>
+      <p>Keep ingestion (§ runbook) as a <strong>separate pipeline/job</strong> that writes to the shared store; the serving API should only read.</p>
+
+      <h3>3.4 Health &amp; readiness probes</h3>
+      <pre><code>@app.get("/health/live")           # process is up
+def live(): return {"status": "ok"}
+
+@app.get("/health/ready")          # dependencies are reachable
+def ready():
+    checks = {
+        "vector_store": app.state.agent.knowledge_base_ready(),
+        "llm": app.state.agent.llm_reachable(),   # cheap ping / cached
+    }
+    ok = all(checks.values())
+    return JSONResponse({"ready": ok, "checks": checks}, status_code=200 if ok else 503)</code></pre>
+      <p>Liveness restarts a wedged process; readiness gates traffic until the embedding model is loaded and the store/provider are reachable.</p>
+
+      <h3>3.5 Configuration, secrets &amp; 12-factor</h3>
+      <ul>
+        <li>Keep all config in environment variables (already the case via <code>pydantic-settings</code>). Add <code>API_KEYS</code>/<code>JWT</code> settings, <code>POSTGRES_DSN</code>, <code>VECTOR_DB_URL</code>, <code>checkpointer</code>, <code>vector_backend</code>.</li>
+        <li>Inject secrets at runtime from a manager (AWS Secrets Manager, GCP Secret Manager, Vault, K8s Secrets) — never bake into images or commit <code>.env</code>.</li>
+        <li>Maintain per-environment profiles (dev / staging / prod) that differ only by env values.</li>
+      </ul>
+
+      <h3>3.6 Observability: distributed tracing &amp; metrics</h3>
+      <p>Structured logs and run metadata exist; add span-level tracing and metrics so you can see <em>inside</em> a run (which tool was slow, how many tokens, retries).</p>
+      <ul>
+        <li><strong>LangSmith</strong> — set <code>LANGSMITH_TRACING=true</code> and <code>LANGSMITH_API_KEY</code>; LangChain/LangGraph auto-trace every LLM and tool call. (LangSmith is already a dependency.)</li>
+        <li><strong>OpenTelemetry</strong> — instrument the API and export traces/metrics to your collector (Jaeger, Tempo, Datadog).</li>
+        <li><strong>Prometheus metrics</strong> — expose <code>/metrics</code>: request rate, p50/p95/p99 latency, error rate, tokens/run, tool-call counts, provider 429s.</li>
+      </ul>
+
+      <h3>3.7 Resilience: timeouts, retries, circuit breaking, fallback</h3>
+      <p>The agent has an LLM timeout and tool-call recovery. Add the rest of the resilience stack:</p>
+      <ul>
+        <li><strong>Retry with exponential backoff + jitter</strong> on provider 429/5xx (e.g. <code>tenacity</code>, already available).</li>
+        <li><strong>Circuit breaker</strong> per external dependency (LLM, search) to fail fast during an outage.</li>
+        <li><strong>Fallback model</strong> — route to a secondary provider/model when the primary is degraded.</li>
+        <li><strong>Hard request timeout</strong> at the API edge so a stuck run cannot hold a worker forever.</li>
+      </ul>
+
+      <h3>3.8 Guardrails &amp; safety (untrusted input)</h3>
+      <ul>
+        <li>Validate/limit input length and reject obviously malicious payloads at the edge.</li>
+        <li>Add prompt-injection mitigation for RAG/web content (treat retrieved text as data, not instructions; spotlighting/delimiting).</li>
+        <li>Optional input/output moderation (provider moderation API, Llama Guard, or a guardrails library).</li>
+        <li>Principle of least privilege for tools — the current tools are read-only/compute-only; keep any future write/network tools behind explicit policy checks.</li>
+      </ul>
+
+      <h3>3.9 Cost controls</h3>
+      <ul>
+        <li>Per-request and per-tenant <strong>token budgets</strong>; reject or truncate beyond budget.</li>
+        <li><strong>Caching</strong> — semantic cache for repeated questions; provider prompt caching for stable system prompts.</li>
+        <li><strong>Model routing/cascade</strong> — cheap model first, escalate only when needed.</li>
+      </ul>
+
+      <h3>3.10 Container &amp; release artifacts</h3>
+      <p>Add a multi-stage <code>Dockerfile</code> (the runbook has a baseline), bake or pre-warm the embedding model, and ship the vector index as a versioned artifact or build it via the ingestion job — not at container start.</p>
+    </section>
+
+    <!-- 4. TARGET ARCHITECTURE -->
+    <section id="target">
+      <h2>4. Target Production Architecture</h2>
+      <p>A horizontally-scalable, stateless API tier with all state pushed to managed/shared backends and every external call observed.</p>
+      <svg viewBox="0 0 1000 470" role="img" aria-label="Target production architecture">
+        <defs>
+          <marker id="pa" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#1f7a8c"></path></marker>
+        </defs>
+        <!-- client -->
+        <rect x="24" y="200" width="130" height="64" rx="8" fill="#eaf1f5" stroke="#9fb4c3"></rect>
+        <text x="89" y="228" text-anchor="middle" font-size="13" font-weight="700">Clients</text>
+        <text x="89" y="248" text-anchor="middle" font-size="11">web · service</text>
+        <!-- edge -->
+        <rect x="190" y="196" width="150" height="72" rx="8" fill="#fff4e8" stroke="#e7b678"></rect>
+        <text x="265" y="222" text-anchor="middle" font-size="13" font-weight="700">Edge</text>
+        <text x="265" y="240" text-anchor="middle" font-size="11">WAF · TLS · LB</text>
+        <text x="265" y="256" text-anchor="middle" font-size="11">authn · rate limit</text>
+        <!-- api pods -->
+        <rect x="380" y="150" width="200" height="164" rx="8" fill="#ffffff" stroke="#1f7a8c" stroke-width="2"></rect>
+        <text x="480" y="176" text-anchor="middle" font-size="14" font-weight="700">API Tier (stateless)</text>
+        <rect x="400" y="190" width="160" height="40" rx="6" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="480" y="215" text-anchor="middle" font-size="12">FastAPI + Uvicorn (HPA)</text>
+        <rect x="400" y="238" width="160" height="34" rx="6" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="480" y="260" text-anchor="middle" font-size="12">ResearchAgent (LangGraph)</text>
+        <rect x="400" y="278" width="160" height="28" rx="6" fill="#f7fbf7" stroke="#a7cfae"></rect>
+        <text x="480" y="297" text-anchor="middle" font-size="11">/health · /metrics</text>
+        <!-- state backends -->
+        <rect x="640" y="40" width="170" height="60" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="725" y="66" text-anchor="middle" font-size="13" font-weight="700">LLM Provider</text>
+        <text x="725" y="85" text-anchor="middle" font-size="11">Groq / OpenAI / …</text>
+        <rect x="640" y="120" width="170" height="60" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="725" y="146" text-anchor="middle" font-size="13" font-weight="700">Vector DB</text>
+        <text x="725" y="165" text-anchor="middle" font-size="11">pgvector / Qdrant</text>
+        <rect x="640" y="200" width="170" height="60" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="725" y="226" text-anchor="middle" font-size="13" font-weight="700">Checkpointer</text>
+        <text x="725" y="245" text-anchor="middle" font-size="11">Postgres (threads)</text>
+        <rect x="640" y="280" width="170" height="60" rx="8" fill="#f9fbfc" stroke="#b8c7d3"></rect>
+        <text x="725" y="306" text-anchor="middle" font-size="13" font-weight="700">Cache</text>
+        <text x="725" y="325" text-anchor="middle" font-size="11">Redis (semantic)</text>
+        <!-- observability -->
+        <rect x="860" y="150" width="120" height="120" rx="8" fill="#eef8fa" stroke="#9acbd4"></rect>
+        <text x="920" y="200" text-anchor="middle" font-size="13" font-weight="700">Observe</text>
+        <text x="920" y="222" text-anchor="middle" font-size="11">LangSmith</text>
+        <text x="920" y="240" text-anchor="middle" font-size="11">OTel · Prom</text>
+        <!-- ingestion -->
+        <rect x="380" y="356" width="200" height="64" rx="8" fill="#fff4ec" stroke="#d59b73"></rect>
+        <text x="480" y="382" text-anchor="middle" font-size="13" font-weight="700">Ingestion Pipeline</text>
+        <text x="480" y="402" text-anchor="middle" font-size="11">scheduled job → writes vectors</text>
+        <!-- edges -->
+        <line x1="154" y1="232" x2="190" y2="232" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="340" y1="232" x2="380" y2="232" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="580" y1="210" x2="640" y2="80" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="580" y1="232" x2="640" y2="150" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="580" y1="250" x2="640" y2="228" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="580" y1="268" x2="640" y2="306" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="580" y1="292" x2="860" y2="210" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="480" y1="356" x2="480" y2="314" stroke="#1f7a8c" stroke-width="2" marker-end="url(#pa)"></line>
+        <line x1="580" y1="388" x2="725" y2="180" stroke="#bf6b21" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#pa)"></line>
+      </svg>
+      <p class="caption">Stateless API replicas autoscale horizontally; conversation memory, vectors, and cache live in shared backends. Ingestion runs out-of-band and only writes to the vector DB (dashed). Every external call is traced.</p>
+    </section>
+
+    <!-- 5. STRATEGIES -->
+    <section id="strategies">
+      <h2>5. Deployment Strategies</h2>
+      <p>From lowest to highest operational maturity. Choose based on traffic shape, team capability, and latency/availability requirements.</p>
+
+      <h3>5.1 Batch / Worker / Scheduled job <span class="ok">(supported today)</span></h3>
+      <p>Run the CLI or import the facade inside a cron job, Airflow/Dagster task, or queue consumer. No API needed. Ideal for periodic research digests, offline enrichment, or internal automation.</p>
+
+      <h3>5.2 Single container on a VM (Docker Compose)</h3>
+      <p>API container + Postgres + a vector DB via Compose. Simplest always-on service; fits low traffic and demos. Single node = limited availability.</p>
+      <pre><code>services:
+  api:
+    image: agentic-research-agent:0.1.0
+    command: gunicorn agentic_research_agent.api.app:app -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000
+    env_file: .env.production
+    depends_on: [postgres]
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment: { POSTGRES_PASSWORD: ... }
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+volumes: { pgdata: {} }</code></pre>
+
+      <h3>5.3 Kubernetes (self-managed orchestration)</h3>
+      <p>Deployment + HPA + Service + Ingress, with secrets and probes. The standard for scalable, self-operated services.</p>
+      <pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata: { name: research-agent }
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: api
+          image: registry/agentic-research-agent:0.1.0
+          ports: [{ containerPort: 8000 }]
+          envFrom: [{ secretRef: { name: research-agent-secrets } }]
+          readinessProbe: { httpGet: { path: /health/ready, port: 8000 }, initialDelaySeconds: 20 }
+          livenessProbe:  { httpGet: { path: /health/live,  port: 8000 } }
+          resources: { requests: { cpu: "500m", memory: "1Gi" }, limits: { cpu: "2", memory: "2Gi" } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: research-agent }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: research-agent }
+  minReplicas: 3
+  maxReplicas: 20
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 65 } } }]</code></pre>
+
+      <h3>5.4 Serverless containers (Cloud Run / ECS Fargate / Azure Container Apps)</h3>
+      <p>Push the image; the platform handles autoscaling (incl. scale-to-zero), TLS, and rollout. Lowest ops for a real API. Watch cold starts — the embedding-model load makes startup heavy, so set a warm <code>minInstances ≥ 1</code> and a generous startup probe.</p>
+
+      <h3>5.5 Function-as-a-Service (Lambda / Cloud Functions)</h3>
+      <p>Possible but awkward for this workload: large dependency bundle (torch/sentence-transformers), cold-start cost, and per-invocation time limits. If used, externalize embeddings entirely and keep functions thin. Generally <strong>not recommended</strong> as the primary tier here.</p>
+
+      <h3>5.6 Managed agent platform (LangGraph Platform)</h3>
+      <p>Because the agent is already a compiled LangGraph, it can be deployed to a managed LangGraph runtime that provides persistence, streaming, scaling, and a task queue out of the box — trading control for speed-to-production.</p>
+
+      <h3>Decision matrix</h3>
+      <table>
+        <thead><tr><th>Strategy</th><th>Ops effort</th><th>Scale</th><th>Best for</th></tr></thead>
+        <tbody>
+          <tr><td>Batch / worker</td><td>Very low</td><td>N/A</td><td>Offline jobs, internal tools (today)</td></tr>
+          <tr><td>Compose on VM</td><td>Low</td><td>Single node</td><td>Demos, low traffic, pilots</td></tr>
+          <tr><td>Serverless container</td><td>Low–med</td><td>Auto (→0)</td><td>Bursty/variable traffic, small teams</td></tr>
+          <tr><td>Kubernetes</td><td>High</td><td>High</td><td>Steady high traffic, platform teams</td></tr>
+          <tr><td>Managed LangGraph</td><td>Low</td><td>Managed</td><td>Fastest path; accept platform lock-in</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 6. RELEASE -->
+    <section id="release">
+      <h2>6. Release &amp; Rollout Strategies</h2>
+      <p>Agent quality is probabilistic, so prefer rollout patterns that expose changes to a fraction of traffic and compare behavior before full cutover.</p>
+      <svg viewBox="0 0 1000 230" role="img" aria-label="Release strategies">
+        <defs><marker id="ra" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#1f7a8c"></path></marker></defs>
+        <!-- rolling -->
+        <text x="150" y="30" text-anchor="middle" font-size="13" font-weight="700">Rolling</text>
+        <rect x="60" y="46" width="180" height="40" rx="6" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="150" y="71" text-anchor="middle" font-size="11">replace pods batch-by-batch</text>
+        <!-- canary -->
+        <text x="500" y="30" text-anchor="middle" font-size="13" font-weight="700">Canary</text>
+        <rect x="360" y="46" width="120" height="40" rx="6" fill="#f7fbf7" stroke="#a7cfae"></rect>
+        <text x="420" y="71" text-anchor="middle" font-size="11">5% → new</text>
+        <rect x="520" y="46" width="120" height="40" rx="6" fill="#eaf1f5" stroke="#9fb4c3"></rect>
+        <text x="580" y="71" text-anchor="middle" font-size="11">95% → stable</text>
+        <!-- blue green -->
+        <text x="850" y="30" text-anchor="middle" font-size="13" font-weight="700">Blue / Green</text>
+        <rect x="760" y="46" width="80" height="40" rx="6" fill="#eaf1f5" stroke="#9fb4c3"></rect>
+        <text x="800" y="71" text-anchor="middle" font-size="11">Blue</text>
+        <rect x="860" y="46" width="80" height="40" rx="6" fill="#f7fbf7" stroke="#a7cfae"></rect>
+        <text x="900" y="71" text-anchor="middle" font-size="11">Green</text>
+        <!-- shadow row -->
+        <text x="150" y="135" text-anchor="middle" font-size="13" font-weight="700">Shadow / Mirror</text>
+        <rect x="60" y="150" width="180" height="44" rx="6" fill="#fff4ec" stroke="#d59b73"></rect>
+        <text x="150" y="170" text-anchor="middle" font-size="11">copy traffic to new build</text>
+        <text x="150" y="186" text-anchor="middle" font-size="11">compare, don't serve</text>
+        <!-- flags -->
+        <text x="500" y="135" text-anchor="middle" font-size="13" font-weight="700">Feature flags</text>
+        <rect x="360" y="150" width="280" height="44" rx="6" fill="#eaf7fa" stroke="#9acbd4"></rect>
+        <text x="500" y="170" text-anchor="middle" font-size="11">toggle prompt/model/tool per tenant</text>
+        <text x="500" y="186" text-anchor="middle" font-size="11">instant rollback, no redeploy</text>
+        <!-- eval gate -->
+        <text x="850" y="135" text-anchor="middle" font-size="13" font-weight="700">Eval gate</text>
+        <rect x="760" y="150" width="180" height="44" rx="6" fill="#f7fbf7" stroke="#a7cfae"></rect>
+        <text x="850" y="170" text-anchor="middle" font-size="11">offline evals must pass</text>
+        <text x="850" y="186" text-anchor="middle" font-size="11">before promotion</text>
+      </svg>
+      <table>
+        <thead><tr><th>Pattern</th><th>How it helps an agent</th></tr></thead>
+        <tbody>
+          <tr><td>Rolling</td><td>Zero-downtime default; gradual replacement with health gating.</td></tr>
+          <tr><td>Canary</td><td>Route a small % to the new prompt/model/build and watch quality + latency + cost before ramping.</td></tr>
+          <tr><td>Blue/Green</td><td>Instant, atomic cutover and instant rollback — keep the old version warm.</td></tr>
+          <tr><td>Shadow / mirror</td><td>Send real traffic to the candidate <em>without serving its output</em>; compare answers offline — ideal for risky prompt/model changes.</td></tr>
+          <tr><td>Feature flags</td><td>Decouple deploy from release; flip prompts/models/tools per tenant and roll back instantly.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 7. PRACTICES -->
+    <section id="practices">
+      <h2>7. Industry Best Practices for Agents in Production</h2>
+      <p>What teams running LLM agents at scale converge on, grouped by concern.</p>
+
+      <h3>Architecture</h3>
+      <div class="grid">
+        <div class="card"><strong>Stateless services, external state</strong>Keep replicas stateless; push conversation memory to a durable checkpointer so any replica can serve any thread.</div>
+        <div class="card"><strong>Separate ingestion from serving</strong>RAG indexing is a pipeline/job; the serving path only reads. Re-index on a schedule or on document change.</div>
+        <div class="card"><strong>One provider seam</strong>Abstract the model behind a factory (already done) so model/provider swaps are config, enabling routing and fallback.</div>
+        <div class="card"><strong>Async + streaming</strong>Stream tokens to users for perceived latency; use async I/O so a worker isn't blocked during long model calls.</div>
+      </div>
+
+      <h3>Reliability</h3>
+      <div class="grid">
+        <div class="card"><strong>Bound every external call</strong>Timeouts on LLM, search, and DB. No unbounded waits.</div>
+        <div class="card"><strong>Retry + backoff + jitter</strong>For 429/5xx; cap attempts; never retry non-idempotent side effects blindly.</div>
+        <div class="card"><strong>Circuit breakers &amp; fallback</strong>Fail fast on a downed dependency; degrade to a fallback model or cached answer.</div>
+        <div class="card"><strong>Cap the loop</strong>A recursion/step limit (already present) plus per-request wall-clock and token budgets stop runaway agents.</div>
+      </div>
+
+      <h3>Observability &amp; Evaluation</h3>
+      <div class="grid">
+        <div class="card"><strong>Trace every run</strong>Span-level tracing (LangSmith/OTel) of each LLM and tool call, with token and latency attribution.</div>
+        <div class="card"><strong>Offline evals as a gate</strong>A versioned test set scoring answer quality, retrieval relevance, and citation faithfulness — must pass before promotion.</div>
+        <div class="card"><strong>Online evals &amp; feedback</strong>Sample production traffic for LLM-as-judge scoring; capture thumbs-up/down to build regression sets.</div>
+        <div class="card"><strong>Drift &amp; quality monitoring</strong>Watch for rising refusals, empty tool results, or quality regressions after provider-side model updates.</div>
+      </div>
+
+      <h3>Safety &amp; Governance</h3>
+      <div class="grid">
+        <div class="card"><strong>Treat retrieved content as data</strong>Defend against prompt injection from RAG/web text via delimiting/spotlighting and instruction isolation.</div>
+        <div class="card"><strong>Input/output moderation</strong>Screen untrusted input and generated output; redact PII before logging or indexing.</div>
+        <div class="card"><strong>Least-privilege tools</strong>Scope tool permissions tightly; gate any write/network/exec tool behind explicit policy and approval.</div>
+        <div class="card"><strong>Auditability</strong>Persist run_id, inputs, tool calls, and outputs for audit and incident review (with retention rules).</div>
+      </div>
+
+      <h3>Cost &amp; Performance</h3>
+      <div class="grid">
+        <div class="card"><strong>Caching</strong>Semantic cache for repeated queries; provider prompt caching for the stable system prompt.</div>
+        <div class="card"><strong>Model routing / cascade</strong>Use a small/cheap model by default; escalate to a larger model only when needed.</div>
+        <div class="card"><strong>Token budgets &amp; quotas</strong>Per-request and per-tenant limits to keep spend predictable.</div>
+        <div class="card"><strong>Right-size retrieval</strong>Tune <code>top_k</code> and chunk size; fewer, better chunks cut tokens and improve answers.</div>
+      </div>
+
+      <h3>Security &amp; LLMOps</h3>
+      <div class="grid">
+        <div class="card"><strong>Secrets &amp; isolation</strong>Runtime secret injection, network policies, and isolated egress for tool calls.</div>
+        <div class="card"><strong>Version prompts &amp; models</strong>Treat the system prompt and model id as versioned artifacts; tie them to release and evals.</div>
+        <div class="card"><strong>CI/CD with eval gates</strong>Automate test/lint/type + offline evals + image scan before any promotion.</div>
+        <div class="card"><strong>Supply-chain hygiene</strong>Pin and scan dependencies (<code>uv.lock</code>), scan images, and rebuild on CVEs.</div>
+      </div>
+    </section>
+
+    <!-- 8. CICD -->
+    <section id="cicd">
+      <h2>8. CI/CD with Evaluation Gates</h2>
+      <p>Extend the existing quality gates with an image build, security scan, an <em>evaluation</em> stage unique to LLM apps, and a progressive rollout.</p>
+      <svg viewBox="0 0 1000 150" role="img" aria-label="CI/CD pipeline">
+        <defs><marker id="ca" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#1f7a8c"></path></marker></defs>
+        <g font-size="11" text-anchor="middle">
+          <rect x="20"  y="55" width="120" height="46" rx="6" fill="#eaf1f5" stroke="#9fb4c3"></rect><text x="80" y="74">Commit / PR</text><text x="80" y="90">git push</text>
+          <rect x="170" y="55" width="120" height="46" rx="6" fill="#eaf7fa" stroke="#9acbd4"></rect><text x="230" y="74">CI gates</text><text x="230" y="90">pytest·ruff·mypy</text>
+          <rect x="320" y="55" width="120" height="46" rx="6" fill="#eaf7fa" stroke="#9acbd4"></rect><text x="380" y="74">Build + scan</text><text x="380" y="90">image · SBOM</text>
+          <rect x="470" y="55" width="120" height="46" rx="6" fill="#f7fbf7" stroke="#a7cfae"></rect><text x="530" y="74">Eval gate</text><text x="530" y="90">offline evals</text>
+          <rect x="620" y="55" width="120" height="46" rx="6" fill="#fff4e8" stroke="#e7b678"></rect><text x="680" y="74">Staging</text><text x="680" y="90">smoke + canary</text>
+          <rect x="770" y="55" width="120" height="46" rx="6" fill="#fff4ec" stroke="#d59b73"></rect><text x="830" y="74">Prod rollout</text><text x="830" y="90">canary → 100%</text>
+          <rect x="905" y="55" width="80" height="46" rx="6" fill="#eef8fa" stroke="#9acbd4"></rect><text x="945" y="74">Monitor</text><text x="945" y="90">+ rollback</text>
+        </g>
+        <g stroke="#1f7a8c" stroke-width="2">
+          <line x1="140" y1="78" x2="170" y2="78" marker-end="url(#ca)"></line>
+          <line x1="290" y1="78" x2="320" y2="78" marker-end="url(#ca)"></line>
+          <line x1="440" y1="78" x2="470" y2="78" marker-end="url(#ca)"></line>
+          <line x1="590" y1="78" x2="620" y2="78" marker-end="url(#ca)"></line>
+          <line x1="740" y1="78" x2="770" y2="78" marker-end="url(#ca)"></line>
+          <line x1="890" y1="78" x2="905" y2="78" marker-end="url(#ca)"></line>
+        </g>
+      </svg>
+      <pre><code># pipeline stages (any CI)
+uv sync --frozen
+uv run ruff check . &amp;&amp; uv run mypy &amp;&amp; uv run pytest      # quality gates
+docker build -t $REG/agentic-research-agent:$SHA .         # build
+trivy image $REG/agentic-research-agent:$SHA               # vuln + secret scan
+uv run python -m evals.run --suite regression --min-score 0.8   # LLM eval gate
+# deploy to staging → smoke → canary 5% → ramp → 100%, with auto-rollback on SLO breach</code></pre>
+      <div class="callout"><strong>What's new vs. a normal service:</strong> the <em>eval gate</em>. Because model/prompt changes can silently degrade quality, a versioned offline eval suite (answer quality, retrieval relevance, citation faithfulness) should block promotion just like a failing unit test.</div>
+    </section>
+
+    <!-- 9. SCALING -->
+    <section id="scaling">
+      <h2>9. Scaling &amp; Capacity Planning</h2>
+      <table>
+        <thead><tr><th>Dimension</th><th>Bottleneck</th><th>Strategy</th></tr></thead>
+        <tbody>
+          <tr><td>Request throughput</td><td>Worker count; LLM latency dominates each request</td><td>Horizontal autoscale (HPA/serverless) on CPU + concurrency; keep workers I/O-bound and async.</td></tr>
+          <tr><td>LLM provider</td><td>Provider rate limits / quotas</td><td>Request quota increases, queue + backpressure, multi-provider fallback, caching.</td></tr>
+          <tr><td>Embeddings</td><td>CPU-bound local model; slow under load</td><td>Move to a dedicated embedding service or hosted embeddings; batch; or GPU nodes for ingestion.</td></tr>
+          <tr><td>Vector search</td><td>Local file store doesn't scale across replicas</td><td>Managed/served vector DB with replicas and proper indexing (HNSW params).</td></tr>
+          <tr><td>State (checkpointer)</td><td>Postgres connections per replica</td><td>Connection pooling (PgBouncer); size pool to replica count.</td></tr>
+          <tr><td>Cold starts</td><td>Embedding-model load at startup</td><td>Warm pool / min instances; readiness probe; bake model into image.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 10. OBSERVABILITY -->
+    <section id="observability">
+      <h2>10. Monitoring, SLOs &amp; Alerting</h2>
+      <h3>Suggested SLOs</h3>
+      <table>
+        <thead><tr><th>SLI</th><th>Example SLO</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>Availability</td><td>99.5% of <code>/v1/ask</code> non-5xx</td><td>LB / API metrics</td></tr>
+          <tr><td>Latency (p95)</td><td>&lt; 8 s end-to-end</td><td><code>duration_ms</code> + traces</td></tr>
+          <tr><td>Run success rate</td><td>&gt; 98% non-error runs</td><td><code>agent_run_finished</code> vs <code>agent_run_failed</code></td></tr>
+          <tr><td>Cost per request</td><td>Within budget; alert on spikes</td><td>Token metrics from traces</td></tr>
+          <tr><td>Answer quality</td><td>Online eval score above threshold</td><td>LLM-as-judge sampling</td></tr>
+        </tbody>
+      </table>
+      <h3>Alert on</h3>
+      <ul>
+        <li>Error/failure rate above baseline; provider 401/429 spikes.</li>
+        <li>p95 latency breaching SLA; recursion-limit hits rising.</li>
+        <li>Empty/failed web-search or retrieval rates climbing.</li>
+        <li>Cost-per-request or token-per-run anomalies.</li>
+        <li>Readiness failing (vector store / provider unreachable).</li>
+      </ul>
+      <div class="callout good-note">The app already emits <code>agent_run_started/finished/failed</code> with <code>run_id</code>, <code>duration_ms</code>, and tool-call counts — a strong foundation. Add tracing and a <code>/metrics</code> endpoint to complete the picture.</div>
+    </section>
+
+    <!-- 11. SECURITY -->
+    <section id="security">
+      <h2>11. Security &amp; Compliance Checklist</h2>
+      <ul>
+        <li>Secrets injected at runtime from a managed store; <code>.env</code> never committed; keys held as <code>SecretStr</code> (already done).</li>
+        <li>TLS everywhere; WAF and authn/z at the edge; per-tenant authorization.</li>
+        <li>Rate limits and quotas per identity to prevent abuse and budget exhaustion.</li>
+        <li>Prompt-injection defenses for RAG/web content; treat tool/retrieval output as untrusted data.</li>
+        <li>PII handling: redact before logging/indexing; define retention &amp; deletion policy for conversation state.</li>
+        <li>Least-privilege, sandboxed tool execution; no arbitrary code/eval (calculator is AST-allow-listed — already done).</li>
+        <li>Network egress controls for outbound LLM/search calls; audit logs for every run.</li>
+        <li>Dependency &amp; image scanning in CI; pinned <code>uv.lock</code>; rebuild on CVEs.</li>
+      </ul>
+    </section>
+
+    <!-- 12. ROADMAP -->
+    <section id="roadmap">
+      <h2>12. Phased Production Roadmap</h2>
+      <div class="grid">
+        <div class="card">
+          <strong>Crawl — internal / pilot</strong>
+          <ul>
+            <li>Containerize; deploy to a serverless container or single VM.</li>
+            <li>Add FastAPI + API-key auth + health probes.</li>
+            <li>SQLite/Postgres checkpointer; ship a prebuilt vector index.</li>
+            <li>Enable LangSmith tracing; ship JSON logs.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <strong>Walk — production v1</strong>
+          <ul>
+            <li>Postgres checkpointer + managed/served vector DB (pgvector/Qdrant).</li>
+            <li>Rate limits, retries/backoff, request timeouts, circuit breaker.</li>
+            <li>CI/CD with offline eval gate; canary rollout; <code>/metrics</code> + dashboards + alerts.</li>
+            <li>Semantic + prompt caching; per-tenant token budgets.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <strong>Run — scale &amp; harden</strong>
+          <ul>
+            <li>Kubernetes + HPA (or managed LangGraph) with multi-provider fallback.</li>
+            <li>Online evals + feedback loop + drift monitoring.</li>
+            <li>Guardrails/moderation, full audit, PII redaction, retention policy.</li>
+            <li>Model routing/cascade; cost &amp; SLO governance.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout"><strong>Recommended first step:</strong> implement §3.1 (FastAPI), §3.2 (durable checkpointer), and §3.4 (health probes), then deploy to a serverless container. That yields a real, scalable service with minimal code and the lowest operational burden — and nothing in the agent's reasoning core has to change.</div>
+    </section>
+
+  </main>
+</body>
+</html>

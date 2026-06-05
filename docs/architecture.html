@@ -127,9 +127,10 @@
     <p class="lede">Enterprise architecture and technical design document for a provider-agnostic LangChain and LangGraph research assistant with RAG, web search, calculator tooling, typed configuration, CLI entry points, and automated tests.</p>
     <div class="meta">
       <span class="pill">Document type: Architecture Review</span>
-      <span class="pill">Generated: 2026-06-04</span>
+      <span class="pill">Generated: 2026-06-05</span>
       <span class="pill">Runtime: Python 3.13</span>
       <span class="pill">Package: agentic_research_agent</span>
+      <span class="pill">Status: 38 tests · ruff · mypy clean</span>
     </div>
   </header>
 
@@ -296,10 +297,32 @@
           <tr><td>Application</td><td><code>ENVIRONMENT</code>, <code>LOG_LEVEL</code></td><td>Controls environment-specific behavior and log verbosity.</td></tr>
           <tr><td>LLM</td><td><code>LLM_PROVIDER</code>, <code>LLM_MODEL</code>, <code>LLM_TEMPERATURE</code>, <code>LLM_MAX_TOKENS</code>, <code>LLM_TIMEOUT_SECONDS</code></td><td>Selects model provider and inference behavior.</td></tr>
           <tr><td>Credentials</td><td><code>GROQ_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>OLLAMA_BASE_URL</code></td><td>Provider-specific connection details. Secrets must remain outside source control.</td></tr>
+          <tr><td>Embedding auth</td><td><code>HF_TOKEN</code> or <code>HUGGINGFACE_API_KEY</code></td><td>Optional HuggingFace token (read via alias). Authenticates embedding-model downloads and removes the unauthenticated-rate-limit notice; absence is silently tolerated.</td></tr>
           <tr><td>RAG</td><td><code>EMBEDDING_MODEL</code>, <code>KNOWLEDGE_BASE_DIR</code>, <code>VECTOR_STORE_DIR</code>, <code>CHUNK_SIZE</code>, <code>CHUNK_OVERLAP</code>, <code>RETRIEVER_TOP_K</code></td><td>Controls ingestion, vector storage, and retrieval quality.</td></tr>
           <tr><td>Agent behavior</td><td><code>MAX_SEARCH_RESULTS</code>, <code>RECURSION_LIMIT</code></td><td>Bounds external search volume and graph execution depth.</td></tr>
         </tbody>
       </table>
+    </section>
+
+    <section>
+      <h2>Command and Programmatic Interface</h2>
+      <p>The package installs a single <code>research-agent</code> console script (Typer). All commands share the same service facade.</p>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>Arguments</th><th>Behavior</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>research-agent ask</code></td><td><code>"&lt;question&gt;"</code>, <code>--thread/-t</code></td><td>Answers a single question and exits. Renders the answer and the tools used.</td></tr>
+          <tr><td><code>research-agent chat</code></td><td><code>[question]</code> (optional), <code>--thread/-t</code></td><td>Interactive REPL with per-thread memory. An optional positional question seeds the first turn before the prompt opens.</td></tr>
+          <tr><td><code>research-agent ingest</code></td><td><code>--force/-f</code></td><td>Builds or rebuilds the knowledge-base vector store from <code>data/knowledge_base</code>.</td></tr>
+        </tbody>
+      </table>
+      <p class="caption">Programmatic use: <code>ResearchAgent().ask("...")</code> returns a typed <code>AgentResponse</code> carrying <code>answer</code>, <code>run_id</code>, <code>duration_ms</code>, and the list of <code>tool_calls</code>.</p>
+      <pre><code>from agentic_research_agent import ResearchAgent
+
+agent = ResearchAgent()
+resp = agent.ask("Compute sqrt(144) and explain RAG in one sentence.")
+print(resp.answer, resp.run_id, resp.duration_ms)</code></pre>
     </section>
 
     <section>
@@ -339,13 +362,23 @@ production target
 
     <section>
       <h2>Implemented Review Changes</h2>
+      <h3>Earlier review cycle</h3>
       <ul>
         <li>Added explicit package dependencies for <code>pydantic-settings</code> and <code>typer</code>.</li>
         <li>Added validation that <code>CHUNK_OVERLAP</code> must be smaller than <code>CHUNK_SIZE</code>.</li>
         <li>Added production JSON logging support while preserving Rich logs for local development.</li>
         <li>Added <code>run_id</code> and <code>duration_ms</code> to agent responses for observability.</li>
         <li>Added calculator length, AST complexity, and exponent magnitude guards.</li>
+        <li>Added provider <code>tool_use_failed</code> recovery so Groq pseudo-tool-call errors do not abort a run.</li>
         <li>Added tests for retrieval config validation and calculator resource limits.</li>
+      </ul>
+      <h3>Latest review cycle (2026-06-05)</h3>
+      <ul>
+        <li>Fixed the <code>chat</code> command to accept an optional positional question (previously <code>chat "..."</code> errored with "unexpected extra argument").</li>
+        <li>Added optional HuggingFace authentication via <code>HF_TOKEN</code>/<code>HUGGINGFACE_API_KEY</code> and suppressed the benign unauthenticated-download notice when no token is set.</li>
+        <li>Exported <code>AgentExecutionError</code> from the <code>core</code> package for a complete, importable exception surface.</li>
+        <li>Hardened provider tool-call recovery: the parser now handles every observed Groq <code>failed_generation</code> shape (<code>&lt;function=name&gt;{…}</code> with or without the closing tag, and <code>&lt;tool_call&gt;</code>/bare-JSON forms), extracts brace-balanced JSON, and recovers multiple calls. Unparseable <code>tool_use_failed</code> sampling artifacts are resampled up to three times before failing — eliminating the intermittent crash on tool-heavy prompts.</li>
+        <li>Confirmed full static-type coverage: the package ships <code>py.typed</code> and passes <code>mypy</code> cleanly.</li>
       </ul>
     </section>
 
@@ -356,8 +389,9 @@ production target
           <tr><th>Check</th><th>Result</th><th>Notes</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>uv run pytest</code></td><td class="status-good">Passed</td><td>30 tests passed.</td></tr>
+          <tr><td><code>uv run pytest</code></td><td class="status-good">Passed</td><td>38 tests passed (offline; no API key required).</td></tr>
           <tr><td><code>uv run ruff check .</code></td><td class="status-good">Passed</td><td>No lint violations found.</td></tr>
+          <tr><td><code>uv run mypy</code></td><td class="status-good">Passed</td><td>No type errors across 19 source files.</td></tr>
         </tbody>
       </table>
     </section>

@@ -52,9 +52,16 @@ def ask(
 
 @app.command()
 def chat(
+    question: str | None = typer.Argument(
+        None, help="Optional first question to seed the session."
+    ),
     thread_id: str = typer.Option("default", "--thread", "-t", help="Conversation id."),
 ) -> None:
-    """Start an interactive chat session (type 'exit' or Ctrl-C to quit)."""
+    """Start an interactive chat session (type 'exit' or Ctrl-C to quit).
+
+    Pass an optional QUESTION to ask immediately before the prompt opens, e.g.
+    ``research-agent chat "Compare the top AI startups funded in 2024."``
+    """
 
     agent = _build_agent()
     console.print(
@@ -66,22 +73,28 @@ def chat(
         )
     )
 
-    while True:
-        try:
-            question = console.input("[bold blue]you ›[/bold blue] ").strip()
-        except (EOFError, KeyboardInterrupt):
-            console.print("\n[dim]Goodbye.[/dim]")
-            raise typer.Exit(0) from None
+    # If a question was supplied on the command line, answer it first.
+    pending = question.strip() if question else None
 
-        if not question:
+    while True:
+        if pending:
+            user_input, pending = pending, None
+        else:
+            try:
+                user_input = console.input("[bold blue]you ›[/bold blue] ").strip()
+            except (EOFError, KeyboardInterrupt):
+                console.print("\n[dim]Goodbye.[/dim]")
+                raise typer.Exit(0) from None
+
+        if not user_input:
             continue
-        if question.lower() in {"exit", "quit", ":q"}:
+        if user_input.lower() in {"exit", "quit", ":q"}:
             console.print("[dim]Goodbye.[/dim]")
             raise typer.Exit(0)
 
         try:
             with console.status("[bold cyan]Thinking…", spinner="dots"):
-                response = agent.ask(question, thread_id=thread_id)
+                response = agent.ask(user_input, thread_id=thread_id)
         except AgentError as exc:
             console.print(f"[bold red]Error:[/bold red] {exc}")
             continue

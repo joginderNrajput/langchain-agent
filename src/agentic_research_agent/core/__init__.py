@@ -2,6 +2,7 @@
 
 from agentic_research_agent.core.exceptions import (
     AgentError,
+    AgentExecutionError,
     ConfigurationError,
     KnowledgeBaseError,
     LLMProviderError,
@@ -11,6 +12,7 @@ from agentic_research_agent.core.logging import configure_logging, get_logger
 
 __all__ = [
     "AgentError",
+    "AgentExecutionError",
     "ConfigurationError",
     "KnowledgeBaseError",
     "LLMProviderError",

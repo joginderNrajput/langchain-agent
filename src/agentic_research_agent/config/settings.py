@@ -12,7 +12,7 @@ from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Repository root, derived relative to this file so paths work regardless of
@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     embedding_model: str = Field(
         default="sentence-transformers/all-MiniLM-L6-v2",
         description="HuggingFace sentence-transformers model for embeddings.",
+    )
+    # Optional HF token: silences the "unauthenticated requests" notice and
+    # raises download rate limits. Read from HF_TOKEN or HUGGINGFACE_API_KEY.
+    hf_token: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("HF_TOKEN", "HUGGINGFACE_API_KEY"),
     )
     knowledge_base_dir: Path = PROJECT_ROOT / "data" / "knowledge_base"
     vector_store_dir: Path = PROJECT_ROOT / "data" / "vector_store"

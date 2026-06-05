@@ -11,6 +11,8 @@ model (~80 MB) once and caches it; subsequent runs reuse the persisted store.
 
 from __future__ import annotations
 
+import logging
+import os
 from pathlib import Path
 
 from langchain_chroma import Chroma
@@ -46,10 +48,25 @@ class KnowledgeBase:
 
         if self._embeddings is None:
             logger.debug("Loading embedding model: %s", self._settings.embedding_model)
+            self._configure_hf_auth()
             self._embeddings = HuggingFaceEmbeddings(
                 model_name=self._settings.embedding_model
             )
         return self._embeddings
+
+    def _configure_hf_auth(self) -> None:
+        """Authenticate with the HF Hub if a token is configured.
+
+        When a token is present it is exported so model downloads are
+        authenticated (higher rate limits). When absent, we quiet the
+        "unauthenticated requests" notice — the public model downloads fine
+        without a token, so the warning is noise for our use case.
+        """
+
+        if self._settings.hf_token:
+            os.environ.setdefault("HF_TOKEN", self._settings.hf_token)
+        else:
+            logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
 
     def build(self, *, force: bool = False) -> None:
         """Build the vector store, reusing a persisted one when present.

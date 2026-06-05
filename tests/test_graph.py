@@ -7,6 +7,7 @@ executes a real tool and loops back before answering.
 
 from __future__ import annotations
 
+import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
 from agentic_research_agent.agents.graph import build_agent_graph
@@ -96,3 +97,41 @@ def test_non_tool_use_provider_errors_still_raise() -> None:
         assert "provider is down" in str(exc)
     else:
         raise AssertionError("Expected provider error to be raised")
+
+
+@pytest.mark.parametrize(
+    "failed_generation",
+    [
+        '<function=calculator{"expression": "2 + 2"}</function>',          # no '>'
+        '<function=calculator>{"expression": "2 + 2"}</function>',         # with '>'
+        '<function=calculator>{"expression": "2 + 2"}',                    # no closing tag
+        '<tool_call>{"name": "calculator", "arguments": {"expression": "2 + 2"}}</tool_call>',
+        '{"name": "calculator", "parameters": {"expression": "2 + 2"}}',   # bare JSON object
+    ],
+)
+def test_failed_generation_formats_are_recovered(failed_generation: str) -> None:
+    responses = [
+        RuntimeError(f"Error code: 400 - 'tool_use_failed' {failed_generation}"),
+        AIMessage(content="The answer is 4."),
+    ]
+    graph = build_agent_graph(_FakeLLM(responses), [calculator])
+
+    result = graph.invoke({"messages": [HumanMessage(content="What is 2 + 2?")]})
+
+    contents = [m.content for m in result["messages"]]
+    assert "4" in contents
+    assert result["messages"][-1].content == "The answer is 4."
+
+
+def test_unparseable_tool_use_failure_is_resampled() -> None:
+    # First attempt fails with an unparseable tool_use_failed; the resample
+    # succeeds and the run completes normally.
+    responses = [
+        RuntimeError("Error code: 400 - 'tool_use_failed' (no parseable payload)"),
+        AIMessage(content="Recovered after resample."),
+    ]
+    graph = build_agent_graph(_FakeLLM(responses), [calculator])
+
+    result = graph.invoke({"messages": [HumanMessage(content="hello")]})
+
+    assert result["messages"][-1].content == "Recovered after resample."
