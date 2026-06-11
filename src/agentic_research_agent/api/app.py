@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette.concurrency import iterate_in_threadpool
 
-from agentic_research_agent.agents.service import ResearchAgent
+from agentic_research_agent.agents.base import AgentService
 from agentic_research_agent.api import metrics
 from agentic_research_agent.api.dependencies import (
     SlidingWindowRateLimiter,
@@ -48,10 +48,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.rate_limiter = SlidingWindowRateLimiter(settings.rate_limit_per_minute)
 
-    # Allow tests/embedders to inject a pre-built agent; otherwise build one.
+    # Allow tests/embedders to inject a pre-built agent; otherwise build one
+    # (single ReAct or multi-agent RAG, per AGENT_MODE).
     if getattr(app.state, "agent", None) is None:
-        logger.info("Building ResearchAgent for API process…")
-        app.state.agent = ResearchAgent(settings)
+        from agentic_research_agent.service_factory import build_agent_service
+
+        logger.info("Building agent service for API process…")
+        app.state.agent = build_agent_service(settings)
 
     try:
         yield
@@ -130,7 +133,7 @@ def _register_routes(app: FastAPI) -> None:
     async def ready(request: Request) -> JSONResponse:
         """Readiness: dependencies are reachable."""
 
-        agent: ResearchAgent | None = getattr(request.app.state, "agent", None)
+        agent: AgentService | None = getattr(request.app.state, "agent", None)
         if agent is None:
             return JSONResponse({"ready": False, "checks": {}}, status_code=503)
         checks = {
@@ -153,7 +156,7 @@ def _register_routes(app: FastAPI) -> None:
     async def ask(
         payload: AgentRequest,
         request: Request,
-        agent: ResearchAgent = Depends(get_agent),
+        agent: AgentService = Depends(get_agent),
     ) -> AgentResponse:
         """Answer a single question and return a structured response."""
 
@@ -180,7 +183,7 @@ def _register_routes(app: FastAPI) -> None:
     def stream(
         payload: AgentRequest,
         request: Request,
-        agent: ResearchAgent = Depends(get_agent),
+        agent: AgentService = Depends(get_agent),
     ) -> StreamingResponse:
         """Stream the run as Server-Sent Events (one event per step)."""
 

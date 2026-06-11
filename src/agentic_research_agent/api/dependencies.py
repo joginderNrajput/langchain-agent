@@ -8,14 +8,14 @@ from threading import Lock
 
 from fastapi import Depends, Header, HTTPException, Request, status
 
-from agentic_research_agent.agents.service import ResearchAgent
+from agentic_research_agent.agents.base import AgentService
 from agentic_research_agent.config.settings import Settings
 from agentic_research_agent.core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-def get_agent(request: Request) -> ResearchAgent:
+def get_agent(request: Request) -> AgentService:
     """Return the process-wide agent built during application startup."""
 
     agent = getattr(request.app.state, "agent", None)

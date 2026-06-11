@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multi-Agent RAG — Run, Deploy &amp; Scale (Operations Runbook)</title>
+  <style>
+    :root { --ink:#17202a; --muted:#5d6d7e; --line:#d5dde5; --panel:#fff; --band:#f4f7fa;
+      --code-bg:#102a33; --code-fg:#eaf7fa; --accent:#1f7a8c; --accent-2:#bf6b21; --good:#2d7d46; --warn:#9a3412; --soft:#eaf1f5; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); background:var(--band); line-height:1.58; }
+    header { background:#10313b; color:#fff; padding:50px 24px 36px; border-bottom:6px solid var(--accent-2); }
+    main { max-width:1180px; margin:0 auto; padding:28px 20px 70px; }
+    h1,h2,h3,h4 { line-height:1.18; margin:0 0 12px; }
+    h1 { font-size:clamp(2rem,4vw,3.3rem); } h2 { font-size:1.62rem; margin-top:30px; } h3 { font-size:1.16rem; margin-top:22px; color:#123; } h4 { font-size:1rem; margin-top:16px; color:var(--accent); }
+    p { margin:0 0 14px; } a { color:var(--accent); }
+    .lede { max-width:940px; color:#d9e8ed; font-size:1.08rem; }
+    .meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; font-size:.92rem; }
+    .pill { border:1px solid rgba(255,255,255,.28); padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.08); }
+    section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:24px; margin:18px 0; box-shadow:0 8px 28px rgba(23,32,42,.05); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+    .card { border:1px solid var(--line); border-radius:8px; padding:16px; background:#fff; }
+    .card strong { display:block; margin-bottom:6px; }
+    .callout { border-left:5px solid var(--accent); background:#eef8fa; padding:14px 16px; margin:14px 0; border-radius:0 8px 8px 0; }
+    .good-note { border-left-color:var(--good); background:#eef8f1; }
+    .warning { border-left-color:var(--warn); background:#fff4ec; }
+    code { background:#eef3f8; border:1px solid #d9e2ea; border-radius:5px; padding:1px 5px; font-family:"SFMono-Regular",Consolas,monospace; font-size:.9em; }
+    pre { overflow-x:auto; background:var(--code-bg); color:var(--code-fg); border-radius:8px; padding:16px; font-size:.86rem; margin:12px 0 16px; }
+    pre code { background:transparent; border:0; color:inherit; padding:0; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:.92rem; }
+    th,td { border:1px solid var(--line); padding:10px 12px; vertical-align:top; text-align:left; }
+    th { background:var(--soft); }
+    ol,ul { padding-left:22px; } li { margin:4px 0; }
+    svg { width:100%; height:auto; border:1px solid var(--line); border-radius:8px; background:#fff; margin:12px 0 4px; }
+    .caption { color:var(--muted); font-size:.9rem; }
+    .toc { columns:2; column-gap:30px; } .toc a { display:block; padding:3px 0; }
+    .ok { color:var(--good); font-weight:700; } .next { color:var(--accent-2); font-weight:700; }
+    .step { counter-increment:step; }
+    .num { display:inline-block; min-width:26px; height:26px; line-height:26px; text-align:center; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; font-size:.85rem; margin-right:8px; }
+    kbd { background:#1c3942; color:#eaf7fa; border-radius:4px; padding:1px 6px; font-size:.82em; }
+    @media print { body{background:#fff;} section{break-inside:avoid; box-shadow:none;} header{-webkit-print-color-adjust:exact; print-color-adjust:exact;} .toc{columns:2;} pre{white-space:pre-wrap;} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Multi-Agent RAG — Operations Runbook</h1>
+    <p class="lede">Everything needed to <strong>run the multi-agent RAG locally</strong>, <strong>deploy it to a server</strong>, and <strong>scale it with production-grade strategies</strong>. Every step lists the exact command. Pairs with the architecture guide (<code>multi-agent-rag-guide.html</code>); this document is the hands-on operator's manual.</p>
+    <div class="meta">
+      <span class="pill">Document type: Run · Deploy · Scale</span>
+      <span class="pill">Mode: <code>AGENT_MODE=multiagent</code></span>
+      <span class="pill">FastAPI · gunicorn · Docker · K8s</span>
+      <span class="pill">Verified live (Azure OpenAI)</span>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Contents</h2>
+      <div class="toc">
+        <a href="#what">1. What you are running</a>
+        <a href="#prereq">2. Prerequisites</a>
+        <a href="#local">3. Run locally (step by step)</a>
+        <a href="#use">4. Using it — CLI &amp; API</a>
+        <a href="#config">5. Configuration reference</a>
+        <a href="#docker">6. Containers — Docker &amp; Compose</a>
+        <a href="#deploy">7. Production deployment</a>
+        <a href="#k8s">8. Kubernetes</a>
+        <a href="#scale">9. Scaling strategies</a>
+        <a href="#observe">10. Observability &amp; health</a>
+        <a href="#secure">11. Security hardening</a>
+        <a href="#trouble">12. Troubleshooting</a>
+        <a href="#checklist">13. Production readiness checklist</a>
+      </div>
+    </section>
+
+    <section id="what">
+      <h2>1. What you are running</h2>
+      <p>The multi-agent RAG mode is a LangGraph supervisor pipeline — <strong>supervisor → retrieval → synthesis → critic</strong> — selected by a single flag. It shares the project's entire production scaffolding (FastAPI service, API-key auth, rate limiting, request timeout, durable checkpointers, Prometheus metrics, Docker/K8s artifacts) with the default <code>single</code> agent. Switching modes is a config change, never a code change.</p>
+      <table>
+        <thead><tr><th>Layer</th><th>Component</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr><td>Orchestration</td><td>Supervisor RAG graph (4 nodes, bounded revision loop)</td><td><code>multiagent/graph.py</code></td></tr>
+          <tr><td>Retrieval</td><td>Hybrid dense+BM25 with RRF fusion, optional cross-encoder rerank, multi-query expansion</td><td><code>rag/</code></td></tr>
+          <tr><td>Service facade</td><td><code>MultiAgentRAG</code> (<code>ask</code>/<code>stream</code>/health/<code>close</code>)</td><td><code>multiagent/service.py</code></td></tr>
+          <tr><td>Selector</td><td><code>build_agent_service()</code> picks single vs multiagent</td><td><code>service_factory.py</code></td></tr>
+          <tr><td>Serving</td><td>FastAPI + gunicorn/uvicorn workers</td><td><code>api/app.py</code></td></tr>
+          <tr><td>State</td><td>Checkpointer: memory · sqlite · postgres</td><td><code>agents/checkpointer.py</code></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><strong>One mental model:</strong> the multi-agent graph replaces the agent's "brain," but the <em>request path</em> (auth → rate-limit → timeout → service → metrics) is identical to single mode. Anything you know about operating the API applies unchanged.</div>
+    </section>
+
+    <section id="prereq">
+      <h2>2. Prerequisites</h2>
+      <table>
+        <thead><tr><th>Requirement</th><th>Version / note</th><th>Check</th></tr></thead>
+        <tbody>
+          <tr><td>Python</td><td>3.13</td><td><code>python --version</code></td></tr>
+          <tr><td>uv (package manager)</td><td>latest</td><td><code>uv --version</code></td></tr>
+          <tr><td>LLM provider key</td><td>one of: Groq · OpenAI · Azure · Anthropic · Gemini · Ollama (local)</td><td>set in <code>.env</code></td></tr>
+          <tr><td>Disk</td><td>~300&nbsp;MB free (embedding model + optional reranker download on first use)</td><td><code>df -h .</code></td></tr>
+          <tr><td>Docker (optional)</td><td>for container/compose runs</td><td><code>docker --version</code></td></tr>
+          <tr><td>Postgres (optional)</td><td>for durable multi-replica state — provided by Compose</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <p>Install uv if needed:</p>
+      <pre><code>curl -LsSf https://astral.sh/uv/install.sh | sh</code></pre>
+    </section>
+
+    <section id="local">
+      <h2>3. Run locally (step by step)</h2>
+
+      <h3 class="step"><span class="num">1</span>Clone &amp; install dependencies</h3>
+      <pre><code>cd "Study/Agentic AI/langchain"
+uv sync                       # core deps (multi-agent RAG included)
+uv sync --extra postgres      # add only if you will use CHECKPOINTER=postgres</code></pre>
+      <p class="caption">All RAG dependencies (<code>rank-bm25</code>, embeddings, LangGraph) are in the core install. The cross-encoder reranker model is downloaded lazily only when <code>RERANK_ENABLED=true</code>.</p>
+
+      <h3 class="step"><span class="num">2</span>Configure the environment</h3>
+      <pre><code>cp .env.example .env</code></pre>
+      <p>Edit <code>.env</code> and set, at minimum, the mode and a provider key:</p>
+      <pre><code># --- pick the multi-agent RAG pipeline ---
+AGENT_MODE=multiagent
+
+# --- pick ONE provider (example: Groq, free key) ---
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_...          # leave LLM_MODEL unset → provider default applies
+
+# --- advanced RAG knobs (sensible defaults shown) ---
+RETRIEVER_TOP_K=4
+RETRIEVER_FETCH_K=10
+MULTIQUERY_ENABLED=true
+MULTIQUERY_COUNT=3
+RERANK_ENABLED=false
+MAX_REVISIONS=1</code></pre>
+      <div class="warning callout"><strong>.env hygiene:</strong> never commit <code>.env</code> (it is gitignored). No trailing commas or quotes on values — a trailing comma on an Azure endpoint/key is a known cause of <code>404 Resource not found</code>. Keys are held as <code>SecretStr</code> and never logged.</div>
+
+      <h3 class="step"><span class="num">3</span>Build the knowledge base (ingest)</h3>
+      <p>The multi-agent retriever reads from the same Chroma index as single mode. Drop your documents (<code>.md</code>, <code>.txt</code>, <code>.pdf</code>) into <code>data/knowledge_base/</code>, then:</p>
+      <pre><code>uv run research-agent ingest          # first run downloads the embedding model (~80 MB)
+uv run research-agent ingest --force  # rebuild after changing documents</code></pre>
+      <p class="caption">Hybrid retrieval needs the corpus: BM25 is built in-memory from the indexed chunks at startup, and dense search queries the Chroma store. If you skip ingest, the supervisor can still answer via the <em>direct</em> (no-retrieval) path, but you get no grounded citations.</p>
+
+      <h3 class="step"><span class="num">3</span>Verify the configuration loaded correctly</h3>
+      <pre><code>AGENT_MODE=multiagent uv run research-agent ask "ping" 2>&1 | head
+# startup log should read:  Initializing MultiAgentRAG (provider=..., model=..., rerank=..., multiquery=...)</code></pre>
+
+      <h3 class="step"><span class="num">4</span>Ask a grounded question</h3>
+      <pre><code>AGENT_MODE=multiagent uv run research-agent ask "What is RAG? Cite your sources."</code></pre>
+      <p>Expected internal flow (visible in logs / stream): <code>[supervisor] route=retrieve → [retrieval] N chunks → [synthesis] → [critic] grounded=True</code>, then a cited answer.</p>
+
+      <h3 class="step"><span class="num">5</span>Or chat interactively (with memory)</h3>
+      <pre><code>AGENT_MODE=multiagent uv run research-agent chat -t my-session</code></pre>
+      <p class="caption">The <code>-t/--thread</code> id keeps separate conversation memories; with a durable checkpointer it survives restarts.</p>
+
+      <div class="good-note callout"><strong>Tip — set the mode once.</strong> Rather than prefixing every command, put <code>AGENT_MODE=multiagent</code> in <code>.env</code>. The CLI, chat, and API all read it.</div>
+    </section>
+
+    <section id="use">
+      <h2>4. Using it — CLI &amp; API</h2>
+
+      <h3>CLI</h3>
+      <table>
+        <thead><tr><th>Command</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>research-agent ask "&lt;q&gt;"</code></td><td>Answer one question and exit.</td></tr>
+          <tr><td><code>research-agent chat</code></td><td>Interactive REPL with thread memory.</td></tr>
+          <tr><td><code>research-agent ingest [-f]</code></td><td>Build / rebuild the knowledge base.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>HTTP API</h3>
+      <p>Run the same multi-agent pipeline as a service. The agent is built <strong>once at startup</strong> (lifespan) and shared across requests:</p>
+      <pre><code># single process (dev)
+AGENT_MODE=multiagent uv run research-agent-api      # → http://localhost:8000  (docs at /docs)
+
+# multi-worker (production)
+AGENT_MODE=multiagent gunicorn agentic_research_agent.api.app:app \
+  -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000 --timeout 120</code></pre>
+      <table>
+        <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>/v1/ask</code></td><td>POST</td><td>Answer a question → <code>AgentResponse</code> (auth + rate-limited).</td></tr>
+          <tr><td><code>/v1/stream</code></td><td>POST</td><td>Stream the run as Server-Sent Events (per-node step labels, then the answer).</td></tr>
+          <tr><td><code>/health/live</code></td><td>GET</td><td>Liveness probe.</td></tr>
+          <tr><td><code>/health/ready</code></td><td>GET</td><td>Readiness — KB reachable + LLM configured.</td></tr>
+          <tr><td><code>/metrics</code></td><td>GET</td><td>Prometheus metrics.</td></tr>
+        </tbody>
+      </table>
+      <pre><code># ask
+curl -X POST http://localhost:8000/v1/ask \
+  -H "Content-Type: application/json" -H "X-API-Key: $KEY" \
+  -d '{"question": "What is hybrid retrieval? Cite sources.", "thread_id": "demo"}'
+
+# stream (see each agent fire in real time)
+curl -N -X POST http://localhost:8000/v1/stream \
+  -H "Content-Type: application/json" -H "X-API-Key: $KEY" \
+  -d '{"question": "Explain RRF.", "thread_id": "demo"}'</code></pre>
+
+      <h3>As a library</h3>
+      <pre><code>from agentic_research_agent import build_agent_service
+from agentic_research_agent.config.settings import get_settings
+
+svc = build_agent_service(get_settings())   # honours AGENT_MODE
+print(svc.ask("Explain reranking. Cite sources.").answer)</code></pre>
+    </section>
+
+    <section id="config">
+      <h2>5. Configuration reference</h2>
+      <p>Everything is environment-driven (pydantic-settings). The knobs most relevant to multi-agent RAG:</p>
+      <table>
+        <thead><tr><th>Variable</th><th>Default</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td><code>AGENT_MODE</code></td><td><code>single</code></td><td>Set <code>multiagent</code> to run this pipeline.</td></tr>
+          <tr><td><code>LLM_PROVIDER</code></td><td><code>groq</code></td><td>groq · openai · azure · anthropic · gemini · ollama.</td></tr>
+          <tr><td><code>LLM_MODEL</code></td><td><em>unset</em></td><td>Leave unset → per-provider default resolves automatically.</td></tr>
+          <tr><td><code>RETRIEVER_TOP_K</code></td><td><code>4</code></td><td>Final chunks kept after fusion/rerank.</td></tr>
+          <tr><td><code>RETRIEVER_FETCH_K</code></td><td><code>10</code></td><td>Candidates pulled per retriever before fusion. ↑ recall, ↑ cost.</td></tr>
+          <tr><td><code>MULTIQUERY_ENABLED</code></td><td><code>true</code></td><td>Expand the question into several search queries.</td></tr>
+          <tr><td><code>MULTIQUERY_COUNT</code></td><td><code>3</code></td><td>Number of expansions (more = more LLM calls + recall).</td></tr>
+          <tr><td><code>RERANK_ENABLED</code></td><td><code>false</code></td><td>Cross-encoder rerank. ↑ precision, downloads a model, adds CPU latency.</td></tr>
+          <tr><td><code>RERANK_MODEL</code></td><td>ms-marco-MiniLM-L-6-v2</td><td>Cross-encoder used when reranking is on.</td></tr>
+          <tr><td><code>MAX_REVISIONS</code></td><td><code>1</code></td><td>Critic-triggered re-retrieval rounds (bounds latency/cost).</td></tr>
+          <tr><td><code>CHECKPOINTER</code></td><td><code>memory</code></td><td>memory · sqlite · postgres (durability of conversation threads).</td></tr>
+          <tr><td><code>LLM_MAX_RETRIES</code></td><td><code>2</code></td><td>Provider retries on 429/5xx.</td></tr>
+          <tr><td><code>API_KEYS</code></td><td><em>empty</em></td><td>Comma-separated; empty disables auth (dev only).</td></tr>
+          <tr><td><code>RATE_LIMIT_PER_MINUTE</code></td><td><code>60</code></td><td>Per key / client IP.</td></tr>
+          <tr><td><code>REQUEST_TIMEOUT_SECONDS</code></td><td><code>120</code></td><td>Per-request server timeout.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><strong>Tuning intuition.</strong> Recall problems? raise <code>RETRIEVER_FETCH_K</code> and keep <code>MULTIQUERY_ENABLED=true</code>. Precision problems (right docs buried)? turn on <code>RERANK_ENABLED</code>. Hallucination/ungrounded answers? raise <code>MAX_REVISIONS</code> to <code>2</code>. Cost/latency too high? lower <code>MULTIQUERY_COUNT</code>, set <code>MAX_REVISIONS=0</code>, and use a cheaper supervisor model.</div>
+    </section>
+
+    <section id="docker">
+      <h2>6. Containers — Docker &amp; Compose</h2>
+
+      <h3>Single image</h3>
+      <p>The multi-stage <code>Dockerfile</code> installs with uv, runs as non-root (uid 10001), pre-warms the embedding model, and serves via gunicorn with 4 uvicorn workers and a <code>/health/ready</code> healthcheck.</p>
+      <pre><code>docker build -t agentic-research-agent:0.1.0 .
+
+docker run --rm -p 8000:8000 \
+  -e AGENT_MODE=multiagent \
+  -e LLM_PROVIDER=groq -e GROQ_API_KEY=$GROQ_API_KEY \
+  -e API_KEYS=$API_KEYS \
+  agentic-research-agent:0.1.0</code></pre>
+
+      <h3>Compose — API + Postgres (durable state)</h3>
+      <p>The bundled <code>docker-compose.yml</code> wires the API to a <code>pgvector/pgvector:pg16</code> Postgres for the durable checkpointer. Add the mode flag:</p>
+      <pre><code># in .env (read by compose): set GROQ_API_KEY, API_KEYS, and:
+AGENT_MODE=multiagent
+
+docker compose up --build       # API on :8000, Postgres with healthcheck + named volume</code></pre>
+      <p class="caption">The compose <code>api</code> service already sets <code>CHECKPOINTER=postgres</code> and a <code>POSTGRES_DSN</code> pointing at the bundled database, and waits for it to pass <code>pg_isready</code> before starting.</p>
+
+      <div class="warning callout"><strong>Mode in compose.</strong> The provided file passes through <code>${LLM_PROVIDER}</code>, <code>${GROQ_API_KEY}</code>, <code>${API_KEYS}</code>. Add <code>AGENT_MODE: ${AGENT_MODE:-single}</code> under the <code>api</code> service <code>environment:</code> block (or export it in your shell) so the container starts in multi-agent mode.</div>
+    </section>
+
+    <section id="deploy">
+      <h2>7. Production deployment</h2>
+
+      <svg viewBox="0 0 980 260" role="img" aria-label="Production topology">
+        <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#1f7a8c"></path></marker></defs>
+        <rect x="20" y="100" width="120" height="56" rx="8" fill="#eaf1f5" stroke="#9fb4c3"></rect><text x="80" y="124" text-anchor="middle" font-size="12" font-weight="700">Clients</text><text x="80" y="142" text-anchor="middle" font-size="10">X-API-Key</text>
+        <rect x="190" y="100" width="130" height="56" rx="8" fill="#eef8fa" stroke="#9acbd4"></rect><text x="255" y="124" text-anchor="middle" font-size="12" font-weight="700">Load balancer</text><text x="255" y="142" text-anchor="middle" font-size="10">TLS · /health/ready</text>
+        <rect x="370" y="40" width="150" height="56" rx="8" fill="#fff4e8" stroke="#e7b678"></rect><text x="445" y="64" text-anchor="middle" font-size="12" font-weight="700">API replica 1</text><text x="445" y="82" text-anchor="middle" font-size="10">gunicorn · N workers</text>
+        <rect x="370" y="160" width="150" height="56" rx="8" fill="#fff4e8" stroke="#e7b678"></rect><text x="445" y="184" text-anchor="middle" font-size="12" font-weight="700">API replica 2..n</text><text x="445" y="202" text-anchor="middle" font-size="10">multiagent graph</text>
+        <rect x="580" y="40" width="150" height="56" rx="8" fill="#f7fbf7" stroke="#a7cfae"></rect><text x="655" y="64" text-anchor="middle" font-size="12" font-weight="700">LLM provider</text><text x="655" y="82" text-anchor="middle" font-size="10">Groq/OpenAI/Azure…</text>
+        <rect x="580" y="120" width="150" height="50" rx="8" fill="#eef8fa" stroke="#9acbd4"></rect><text x="655" y="142" text-anchor="middle" font-size="12" font-weight="700">Vector store</text><text x="655" y="158" text-anchor="middle" font-size="10">Chroma / pgvector</text>
+        <rect x="580" y="190" width="150" height="50" rx="8" fill="#eaf1f5" stroke="#9fb4c3"></rect><text x="655" y="212" text-anchor="middle" font-size="12" font-weight="700">Postgres</text><text x="655" y="228" text-anchor="middle" font-size="10">checkpointer (state)</text>
+        <rect x="790" y="120" width="150" height="50" rx="8" fill="#eef8f1" stroke="#a7cfae"></rect><text x="865" y="142" text-anchor="middle" font-size="12" font-weight="700">Prometheus</text><text x="865" y="158" text-anchor="middle" font-size="10">/metrics scrape</text>
+        <line x1="140" y1="128" x2="188" y2="128" stroke="#1f7a8c" stroke-width="2" marker-end="url(#a)"></line>
+        <line x1="320" y1="120" x2="368" y2="80" stroke="#1f7a8c" stroke-width="2" marker-end="url(#a)"></line>
+        <line x1="320" y1="135" x2="368" y2="180" stroke="#1f7a8c" stroke-width="2" marker-end="url(#a)"></line>
+        <line x1="520" y1="68" x2="578" y2="68" stroke="#1f7a8c" stroke-width="2" marker-end="url(#a)"></line>
+        <line x1="520" y1="150" x2="578" y2="145" stroke="#1f7a8c" stroke-width="2" marker-end="url(#a)"></line>
+        <line x1="520" y1="195" x2="578" y2="205" stroke="#1f7a8c" stroke-width="2" marker-end="url(#a)"></line>
+      </svg>
+      <p class="caption">Figure 1 — Stateless API replicas behind a load balancer. Conversation state is externalized to Postgres so any replica can serve any thread. The LLM provider and vector store are shared backing services.</p>
+
+      <h3>7.1 The golden rule: externalize state</h3>
+      <p>The API process is stateless <em>only</em> if conversation memory lives outside it. With the default <code>CHECKPOINTER=memory</code>, threads are lost on restart and not shared across replicas. For any multi-replica deployment:</p>
+      <pre><code>CHECKPOINTER=postgres
+POSTGRES_DSN=postgresql://user:pass@db-host:5432/agent
+# build the image / install with the postgres extra:  uv sync --extra postgres</code></pre>
+      <p>For a single durable node, <code>CHECKPOINTER=sqlite</code> with <code>SQLITE_PATH</code> on a persistent volume is enough.</p>
+
+      <h3>7.2 Bare-metal / VM with gunicorn + systemd</h3>
+      <pre><code># /etc/systemd/system/research-agent.service
+[Unit]
+Description=Agentic Research Agent (multi-agent RAG)
+After=network.target
+
+[Service]
+User=appuser
+WorkingDirectory=/opt/agentic-research-agent
+EnvironmentFile=/opt/agentic-research-agent/.env      # holds AGENT_MODE=multiagent, keys, DSN
+ExecStart=/opt/agentic-research-agent/.venv/bin/gunicorn \
+  agentic_research_agent.api.app:app \
+  -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000 --timeout 120
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+      <pre><code>sudo systemctl daemon-reload
+sudo systemctl enable --now research-agent
+sudo systemctl status research-agent
+curl -fsS http://localhost:8000/health/ready</code></pre>
+      <p class="caption">Put Nginx/Caddy in front for TLS termination and a sane <code>proxy_read_timeout</code> (≥ <code>REQUEST_TIMEOUT_SECONDS</code>; SSE streaming needs buffering off).</p>
+
+      <h3>7.3 Worker sizing</h3>
+      <p>The multi-agent graph is <strong>I/O-bound</strong> — most wall-clock is spent waiting on LLM and retrieval calls, not CPU (unless reranking is on). Start with <code>-w = 2 × cores</code> and adjust by watching latency and provider rate limits. With <code>RERANK_ENABLED=true</code> the cross-encoder is CPU-bound; size workers to physical cores and keep the model resident (built once at startup).</p>
+    </section>
+
+    <section id="k8s">
+      <h2>8. Kubernetes</h2>
+      <p>A minimal, production-shaped Deployment + Service + HPA. State is in Postgres (a managed instance or in-cluster), secrets in a <code>Secret</code>, autoscaling on CPU.</p>
+      <pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: research-agent
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: research-agent } }
+  template:
+    metadata: { labels: { app: research-agent } }
+    spec:
+      containers:
+        - name: api
+          image: registry.example.com/agentic-research-agent:0.1.0
+          ports: [{ containerPort: 8000 }]
+          env:
+            - { name: AGENT_MODE, value: "multiagent" }
+            - { name: LLM_PROVIDER, value: "groq" }
+            - { name: CHECKPOINTER, value: "postgres" }
+            - name: GROQ_API_KEY
+              valueFrom: { secretKeyRef: { name: agent-secrets, key: groq-api-key } }
+            - name: API_KEYS
+              valueFrom: { secretKeyRef: { name: agent-secrets, key: api-keys } }
+            - name: POSTGRES_DSN
+              valueFrom: { secretKeyRef: { name: agent-secrets, key: postgres-dsn } }
+          resources:
+            requests: { cpu: "500m", memory: "512Mi" }
+            limits:   { cpu: "2",    memory: "2Gi" }     # raise memory if RERANK_ENABLED=true
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8000 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8000 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata: { name: research-agent }
+spec:
+  selector: { app: research-agent }
+  ports: [{ port: 80, targetPort: 8000 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: research-agent }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: research-agent }
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 65 } }</code></pre>
+      <div class="callout"><strong>Probe semantics matter.</strong> <code>/health/ready</code> checks the knowledge base is reachable and the LLM is configured — a replica that can't retrieve is pulled from rotation rather than serving broken answers. <code>/health/live</code> only restarts a wedged process. Give <code>initialDelaySeconds</code> enough room for the embedding model to load at startup.</div>
+      <pre><code>kubectl apply -f k8s.yaml
+kubectl rollout status deploy/research-agent
+kubectl get hpa research-agent -w</code></pre>
+    </section>
+
+    <section id="scale">
+      <h2>9. Scaling strategies</h2>
+      <p>Scale along the axis that is actually the bottleneck. For this pipeline they are, in order of likelihood: <strong>LLM throughput → retrieval store → reranker CPU → state store</strong>.</p>
+
+      <h3>9.1 Horizontal (the default)</h3>
+      <table>
+        <thead><tr><th>Do</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Run replicas behind a load balancer; autoscale on CPU/latency (HPA above).</td><td>The API is stateless once state is in Postgres — replicas are interchangeable.</td></tr>
+          <tr><td>Externalize state to Postgres before adding replicas.</td><td>Otherwise thread memory is per-pod and lost on rescheduling.</td></tr>
+          <tr><td>Set sticky-session <em>off</em>.</td><td>Any replica can serve any <code>thread_id</code> because state is shared.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>9.2 LLM is usually the real limit</h3>
+      <p>Each multi-agent run makes several model calls (supervisor + query expansion × <code>MULTIQUERY_COUNT</code> + synthesis + critic, × revisions). Provider rate limits (TPM/RPM) cap you long before CPU does. Strategies:</p>
+      <ul>
+        <li><strong>Right-size the calls.</strong> Lower <code>MULTIQUERY_COUNT</code> and <code>MAX_REVISIONS</code>; use a <em>cheap, fast model for the supervisor/critic</em> and a stronger one for synthesis (cheap routing, expensive writing).</li>
+        <li><strong>Spread load.</strong> Higher provider tier, multiple keys/deployments, or a gateway that load-balances across them. <code>LLM_MAX_RETRIES</code> already absorbs transient 429s.</li>
+        <li><strong>Cache.</strong> Add a semantic/exact response cache (e.g. Redis) keyed on normalized question + retrieved-doc set; short-circuit identical or near-identical questions. (Roadmap item — a clean seam exists at the service facade.)</li>
+      </ul>
+
+      <h3>9.3 Retrieval store</h3>
+      <table>
+        <thead><tr><th>Stage</th><th>Store</th><th>Trade-off</th></tr></thead>
+        <tbody>
+          <tr><td>Dev / single node</td><td>Chroma (local, default)</td><td>Zero infra; index lives on the pod's disk — not shared.</td></tr>
+          <tr><td>Multi-replica</td><td>pgvector (shared Postgres) or Qdrant</td><td>One shared index; replicas don't each rebuild. Swap behind the <code>dense_search</code> seam in <code>build_hybrid_retriever</code>.</td></tr>
+          <tr><td>Large corpus</td><td>Managed vector DB (Qdrant/Weaviate/pgvector)</td><td>Horizontal index scaling, filtering, persistence; network hop per query.</td></tr>
+        </tbody>
+      </table>
+      <div class="warning callout"><strong>BM25 note at scale.</strong> The sparse half currently builds an in-memory BM25 index from the corpus at startup. That is fine to tens of thousands of chunks. For larger corpora, move sparse retrieval to the store (e.g. Postgres full-text or an OpenSearch hybrid index) behind the same <code>HybridRetriever</code> interface so RRF fusion is unchanged.</div>
+
+      <h3>9.4 Reranker placement</h3>
+      <p>The cross-encoder is CPU-heavy and loaded per process. If you enable it broadly: pin workers to physical cores, raise pod memory limits, and consider running the reranker as a <em>separate service</em> (or on GPU nodes) that the retriever calls — the <code>Reranker</code> protocol makes this a drop-in swap.</p>
+
+      <h3>9.5 State store</h3>
+      <p>Postgres handles checkpointer writes comfortably; it is rarely the bottleneck. If it becomes one: connection pooling (PgBouncer), a read replica is not needed (writes dominate), and prune old threads on a schedule.</p>
+
+      <h3>9.6 Vertical</h3>
+      <p>More CPU only helps if reranking is on or you serve many concurrent CPU-bound requests; more memory helps with large embedding/reranker models and bigger in-memory BM25 indexes. For a pure LLM-bound workload, scale out (replicas), not up.</p>
+
+      <table>
+        <thead><tr><th>Symptom</th><th>First lever</th></tr></thead>
+        <tbody>
+          <tr><td>p95 latency high, CPU low</td><td>LLM-bound → cheaper supervisor model, fewer multiqueries/revisions, cache.</td></tr>
+          <tr><td>429s from provider</td><td>Higher tier / multiple keys / gateway; back-pressure via rate limit.</td></tr>
+          <tr><td>CPU pegged</td><td>Reranking on → scale out or offload reranker; raise replicas via HPA.</td></tr>
+          <tr><td>Answers lose memory across requests</td><td>Switch off <code>memory</code> checkpointer → Postgres.</td></tr>
+          <tr><td>Recall poor / wrong docs</td><td>↑ <code>RETRIEVER_FETCH_K</code>, enable rerank, shared/better vector store.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="observe">
+      <h2>10. Observability &amp; health</h2>
+      <ul>
+        <li><strong>Metrics</strong> — scrape <code>/metrics</code> (Prometheus). Track request rate, latency histograms, error rate, in-flight requests.</li>
+        <li><strong>Health</strong> — <code>/health/ready</code> for the load balancer/probe; <code>/health/live</code> for restart-only liveness.</li>
+        <li><strong>Structured logs</strong> — JSON in production. Each run logs <code>multiagent_run_started/finished</code> with <code>run_id</code>, <code>thread_id</code>, <code>duration_ms</code>, <code>route</code>, and <code>docs</code> count — enough to trace any answer.</li>
+        <li><strong>Tracing</strong> — set <code>LANGSMITH_TRACING=true</code> + <code>LANGSMITH_API_KEY</code> to capture the full agent graph (every node, prompt, and LLM call) in LangSmith. Invaluable for debugging routing and grounding.</li>
+      </ul>
+      <pre><code># quick local Prometheus scrape config
+scrape_configs:
+  - job_name: research-agent
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["research-agent:80"]</code></pre>
+      <p class="caption">Key SLO signals for this pipeline: synthesis latency (dominant), critic revision rate (high = retrieval quality issue), and provider 429 rate (capacity).</p>
+    </section>
+
+    <section id="secure">
+      <h2>11. Security hardening</h2>
+      <ul>
+        <li><strong>Auth on</strong> — set <code>API_KEYS</code> in every non-dev environment; empty means open. Rotate keys via the secret store.</li>
+        <li><strong>Secrets at runtime</strong> — inject via env/Secret, never bake into the image or commit <code>.env</code>. Keys are held as <code>SecretStr</code> and never logged.</li>
+        <li><strong>Rate limit</strong> — keep <code>RATE_LIMIT_ENABLED=true</code>; tune per-key. Protects you and your provider quota.</li>
+        <li><strong>Timeouts</strong> — <code>REQUEST_TIMEOUT_SECONDS</code> caps a wedged run; align upstream proxy timeouts.</li>
+        <li><strong>CORS</strong> — set <code>CORS_ORIGINS</code> to an explicit allow-list in production (not <code>*</code>).</li>
+        <li><strong>Non-root container</strong> — the image already runs as uid 10001; keep it that way and run read-only root FS where possible.</li>
+        <li><strong>TLS</strong> — terminate at the load balancer / ingress; never expose plain HTTP publicly.</li>
+      </ul>
+    </section>
+
+    <section id="trouble">
+      <h2>12. Troubleshooting</h2>
+      <table>
+        <thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Answers have no citations / always "direct"</td><td>Knowledge base empty or not ingested</td><td><code>uv run research-agent ingest --force</code>; confirm files in <code>data/knowledge_base/</code>.</td></tr>
+          <tr><td><code>404 model_not_found</code></td><td>Wrong model for the provider</td><td>Unset <code>LLM_MODEL</code> to use the provider default, or set a valid one.</td></tr>
+          <tr><td>Azure <code>404 Resource not found</code></td><td>Trailing comma/quote in endpoint, deployment, or key</td><td>Strip trailing punctuation from <code>AZURE_OPENAI_*</code> values in <code>.env</code>.</td></tr>
+          <tr><td>429 / rate limited</td><td>Provider quota (account-level)</td><td>Higher tier, multiple keys, fewer multiqueries/revisions; <code>LLM_MAX_RETRIES</code> covers transient only.</td></tr>
+          <tr><td>Memory lost across requests</td><td><code>CHECKPOINTER=memory</code> with multiple replicas/restarts</td><td>Switch to <code>sqlite</code> (1 node) or <code>postgres</code> (many).</td></tr>
+          <tr><td>Readiness probe never passes</td><td>Embedding model still downloading / KB unreachable</td><td>Raise <code>initialDelaySeconds</code>; pre-warm in image (already done in Dockerfile).</td></tr>
+          <tr><td>High latency, low CPU</td><td>LLM-bound</td><td>Cheaper supervisor/critic model; reduce <code>MULTIQUERY_COUNT</code>/<code>MAX_REVISIONS</code>; add cache.</td></tr>
+          <tr><td>Critic loops to <code>MAX_REVISIONS</code> every time</td><td>Retrieval not surfacing supporting context</td><td>↑ <code>RETRIEVER_FETCH_K</code>, enable rerank, improve corpus; inspect via LangSmith trace.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="checklist">
+      <h2>13. Production readiness checklist</h2>
+      <div class="grid">
+        <div class="card"><strong>Config</strong>☐ <code>AGENT_MODE=multiagent</code><br>☐ <code>ENVIRONMENT=production</code><br>☐ Provider key set, <code>LLM_MODEL</code> validated</div>
+        <div class="card"><strong>State</strong>☐ <code>CHECKPOINTER=postgres</code> (multi-replica)<br>☐ <code>POSTGRES_DSN</code> to managed DB<br>☐ Image built with <code>--extra postgres</code></div>
+        <div class="card"><strong>Security</strong>☐ <code>API_KEYS</code> set &amp; rotated<br>☐ <code>CORS_ORIGINS</code> allow-list<br>☐ TLS at ingress · non-root container</div>
+        <div class="card"><strong>Resilience</strong>☐ Rate limit on<br>☐ Timeouts aligned<br>☐ HPA min/max set · probes wired</div>
+        <div class="card"><strong>Observability</strong>☐ <code>/metrics</code> scraped<br>☐ JSON logs shipped<br>☐ LangSmith tracing in staging</div>
+        <div class="card"><strong>Retrieval</strong>☐ KB ingested in image/volume<br>☐ Shared vector store for replicas<br>☐ Reranker sizing decided</div>
+      </div>
+      <div class="good-note callout"><strong>Verified path.</strong> This pipeline has been run live (Azure OpenAI): <code>supervisor → retrieval (chunks) → synthesis → critic (grounded=True)</code> producing a cited, grounded answer — with 74 offline tests, ruff, and mypy all green. The deployment artifacts above are the same ones the project ships (<code>Dockerfile</code>, <code>docker-compose.yml</code>, CI).</div>
+    </section>
+
+    <section>
+      <h2>Related documents</h2>
+      <ul>
+        <li><a href="multi-agent-rag-guide.html">Multi-Agent RAG — Architecture &amp; Guide</a> — the agents, graph, and retrieval internals.</li>
+        <li><a href="production-grade-guide.html">Production-Grade Guide</a> — broader deployment, scaling, and security reference.</li>
+        <li><a href="operations-runbook.html">Operations Runbook</a> — day-2 operations for the service.</li>
+        <li><a href="architecture.html">Architecture</a> — the overall project design.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

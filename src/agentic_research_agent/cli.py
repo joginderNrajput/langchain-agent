@@ -15,9 +15,10 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from agentic_research_agent.agents.service import ResearchAgent
+from agentic_research_agent.agents.base import AgentService
 from agentic_research_agent.config.settings import get_settings
 from agentic_research_agent.core.exceptions import AgentError
+from agentic_research_agent.service_factory import build_agent_service
 from agentic_research_agent.tools.knowledge_base import KnowledgeBase
 
 app = typer.Typer(
@@ -118,11 +119,14 @@ def ingest(
     console.print(f"[green]✓ Vector store ready at[/green] {settings.vector_store_dir}")
 
 
-def _build_agent() -> ResearchAgent:
-    """Construct the agent, turning config errors into clean CLI messages."""
+def _build_agent() -> AgentService:
+    """Construct the configured agent (single or multi-agent RAG).
+
+    Turns configuration errors into clean CLI messages.
+    """
 
     try:
-        return ResearchAgent()
+        return build_agent_service()
     except AgentError as exc:
         console.print(f"[bold red]Error:[/bold red] {exc}")
         raise typer.Exit(1) from exc

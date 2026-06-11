@@ -122,6 +122,28 @@ class KnowledgeBase:
         store = self._ensure_built()
         return store.similarity_search(query, k=self._settings.retriever_top_k)
 
+    def search_with_scores(self, query: str, k: int) -> list[tuple[Document, float]]:
+        """Dense similarity search returning ``(document, distance)`` pairs.
+
+        Lower distance = more similar. Used by the hybrid retriever to fuse
+        dense results with sparse (BM25) results.
+        """
+
+        store = self._ensure_built()
+        return store.similarity_search_with_score(query, k=k)
+
+    def iter_chunks(self) -> list[Document]:
+        """Return all indexed chunks (used to build the sparse BM25 index)."""
+
+        store = self._ensure_built()
+        raw = store.get(include=["documents", "metadatas"])
+        documents = raw.get("documents") or []
+        metadatas = raw.get("metadatas") or [{}] * len(documents)
+        return [
+            Document(page_content=text, metadata=meta or {})
+            for text, meta in zip(documents, metadatas, strict=False)
+        ]
+
     def as_tool(self) -> BaseTool:
         """Expose the knowledge base as a LangChain tool for the agent."""
 

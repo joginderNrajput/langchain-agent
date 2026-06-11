@@ -10,11 +10,12 @@ langgraph-prebuilt        # Prebuilt agent patterns (e.g. ReAct)
 langsmith                 # Tracing, debugging & evaluation of agents
 
 # ─────────────────────────────────────────────────────────────
-# LLM Providers (pick the ones you use; all listed for convenience)
+# LLM Providers (pick the ones you use; all listed for convenience)c
 # ─────────────────────────────────────────────────────────────
 langchain-openai          # OpenAI / Azure OpenAI models
 langchain-anthropic       # Anthropic Claude models
-langchain-google-genai    # Google Gemini models
+langchain-google-genai    # Google Gemini modelsclear
+
 langchain-groq            # Groq (fast inference)
 langchain-ollama          # Local models via Ollama
 langchain-huggingface     # Hugging Face models & embeddings

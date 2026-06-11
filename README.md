@@ -168,6 +168,28 @@ docker compose up --build        # API + Postgres (pgvector image) stack
 See [docs/production-deployment-guide.html](docs/production-deployment-guide.html)
 for deployment strategies, scaling, security, and the full operational guide.
 
+## Multi-agent RAG mode
+
+The project ships two interchangeable agent services, selected by `AGENT_MODE`:
+
+| Mode | What it is |
+| --- | --- |
+| `single` (default) | A ReAct tool-using agent (web search · knowledge base · calculator). |
+| `multiagent` | A **supervisor multi-agent RAG** pipeline: `supervisor → retrieval → synthesis → critic`, with hybrid (dense + BM25) retrieval, multi-query expansion, optional cross-encoder reranking, and a grounding critic that can trigger bounded re-retrieval. |
+
+```bash
+# run the multi-agent RAG pipeline (CLI, chat, or API all honour AGENT_MODE)
+AGENT_MODE=multiagent uv run research-agent ask "What is RAG? Cite sources."
+AGENT_MODE=multiagent uv run research-agent-api
+```
+
+Both modes share the same API, auth, checkpointer, metrics, and deployment.
+See [docs/multi-agent-rag-guide.html](docs/multi-agent-rag-guide.html) for the
+architecture, retrieval pipeline, and tuning knobs, and
+[docs/multi-agent-rag-operations.html](docs/multi-agent-rag-operations.html)
+for the hands-on **run · deploy · scale** runbook (every command, Docker/K8s
+manifests, and scaling strategies).
+
 ## Use it as a library
 
 ```python

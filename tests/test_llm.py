@@ -30,9 +30,7 @@ def test_gemini_missing_api_key_raises_configuration_error() -> None:
 
 
 def test_gemini_model_built_when_key_present() -> None:
-    settings = Settings(
-        _env_file=None, llm_provider=LLMProvider.GEMINI, google_api_key="test-key"
-    )
+    settings = Settings(_env_file=None, llm_provider=LLMProvider.GEMINI, google_api_key="test-key")
     model = build_chat_model(settings)
     assert hasattr(model, "invoke")
     assert hasattr(model, "bind_tools")

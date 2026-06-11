@@ -31,6 +31,17 @@ class LLMProvider(StrEnum):
     OLLAMA = "ollama"
 
 
+class AgentMode(StrEnum):
+    """Which agent the service exposes.
+
+    ``single`` is the ReAct tool-using agent; ``multiagent`` is the supervisor
+    multi-agent RAG pipeline (retrieval → synthesis → critic).
+    """
+
+    SINGLE = "single"
+    MULTIAGENT = "multiagent"
+
+
 class CheckpointerBackend(StrEnum):
     """Where LangGraph conversation state is persisted.
 
@@ -138,11 +149,34 @@ class Settings(BaseSettings):
     retriever_top_k: int = Field(default=4, gt=0)
 
     # ----- Agent behaviour ---------------------------------------------------
+    agent_mode: AgentMode = Field(
+        default=AgentMode.SINGLE,
+        description="single (ReAct tools) | multiagent (supervisor RAG pipeline).",
+    )
     max_search_results: int = Field(default=5, gt=0)
     recursion_limit: int = Field(
         default=25,
         gt=0,
         description="Max LangGraph super-steps before aborting a run.",
+    )
+
+    # ----- Advanced RAG (multi-agent) ----------------------------------------
+    retriever_fetch_k: int = Field(
+        default=10, gt=0, description="Candidates pulled per retriever before fusion."
+    )
+    multiquery_enabled: bool = Field(
+        default=True, description="Expand the question into several search queries."
+    )
+    multiquery_count: int = Field(default=3, gt=0)
+    rerank_enabled: bool = Field(
+        default=False,
+        description="Cross-encoder rerank of candidates (downloads a model).",
+    )
+    rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    max_revisions: int = Field(
+        default=1,
+        ge=0,
+        description="Max critic-triggered re-retrieval rounds before answering.",
     )
 
     # ----- Conversation state (checkpointer) ---------------------------------

@@ -27,9 +27,7 @@ def test_defaults() -> None:
         (LLMProvider.OLLAMA, "llama3.1"),
     ],
 )
-def test_effective_model_defaults_per_provider(
-    provider: LLMProvider, expected_model: str
-) -> None:
+def test_effective_model_defaults_per_provider(provider: LLMProvider, expected_model: str) -> None:
     # This is the fix for the OpenAI 404: switching provider without setting
     # LLM_MODEL resolves the provider's own default, not a Groq model.
     s = Settings(_env_file=None, llm_provider=provider)

@@ -110,9 +110,7 @@ def _build_azure(settings: Settings) -> BaseChatModel:
             "AZURE_OPENAI_ENDPOINT is not set (e.g. https://<resource>.openai.azure.com/)."
         )
     if not settings.azure_openai_deployment:
-        raise ConfigurationError(
-            "AZURE_OPENAI_DEPLOYMENT is not set (your Azure deployment name)."
-        )
+        raise ConfigurationError("AZURE_OPENAI_DEPLOYMENT is not set (your Azure deployment name).")
 
     # Stub gaps for alias kwargs (api_version/api_key/timeout/max_tokens).
     return AzureChatOpenAI(  # type: ignore[call-arg]
